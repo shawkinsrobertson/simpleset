@@ -86,4 +86,52 @@ Some rambling sentence that is not an exercise at all.
     expect(plan.days).toHaveLength(0);
     expect(plan.warnings.length).toBeGreaterThan(0);
   });
+
+  it('groups a numberless circuit-style exercise list under one ALL-CAPS section instead of fragmenting per line', () => {
+    // Regression test: a plan with no per-exercise sets/reps at all (shared
+    // circuit timing instead) used to hijack the "new day" heuristic on
+    // every single exercise name, turning one section into ~15 bogus
+    // one-exercise "days" that mostly got silently dropped.
+    const text = `
+Bodyweight Plan
+
+WARM-UP
+World's Greatest Stretch
+Pike Fold to Squat Hold
+Butterfly Bridge to Draw-In
+
+MAIN SET
+Incline Pushup
+Scarecrows
+Box Squat
+Single Leg DL
+
+COOL DOWN
+Child's Pose
+Down Dog Pedal and Reach
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days).toHaveLength(3);
+    expect(plan.days.map((d) => d.label)).toEqual(['WARM-UP', 'MAIN SET', 'COOL DOWN']);
+    expect(plan.days[0].exercises.map((e) => e.name)).toEqual([
+      "World's Greatest Stretch",
+      'Pike Fold to Squat Hold',
+      'Butterfly Bridge to Draw-In',
+    ]);
+    expect(plan.days[1].exercises).toHaveLength(4);
+    expect(plan.days[2].exercises).toHaveLength(2);
+    // Every exercise still gets flagged since none had recognizable sets/reps.
+    expect(plan.warnings.length).toBeGreaterThanOrEqual(9);
+  });
+
+  it('still promotes a short plain-case line to a new day when nothing is open yet', () => {
+    const text = `
+My Plan
+Push Day
+Bench Press 3x8 135lb
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days).toHaveLength(1);
+    expect(plan.days[0].label).toBe('Push Day');
+  });
 });
