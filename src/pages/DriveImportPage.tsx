@@ -1,0 +1,146 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getAccessToken, isDriveConfigured } from '../drive/googleAuth';
+import { exportDriveFile, listPlanCandidateFiles } from '../drive/driveApi';
+import type { DriveFile } from '../drive/driveApi';
+import { parseCsv, parseText } from '../parser';
+
+const dateFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+export default function DriveImportPage() {
+  const navigate = useNavigate();
+  const [token, setToken] = useState<string | null>(null);
+  const [files, setFiles] = useState<DriveFile[]>([]);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isDriveConfigured()) {
+    return (
+      <div className="flex flex-col items-center gap-3 px-6 pt-20 text-center">
+        <span className="text-4xl">🔗</span>
+        <h1 className="text-xl font-semibold text-slate-900">Google Drive isn't set up yet</h1>
+        <p className="text-sm text-slate-500">
+          This deployment doesn't have a Google OAuth client configured. Set{' '}
+          <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">VITE_GOOGLE_CLIENT_ID</code> to
+          enable Drive import, or use file upload instead.
+        </p>
+        <button
+          onClick={() => navigate('/import')}
+          className="mt-2 rounded-xl bg-brand-600 px-5 py-3 font-semibold text-white"
+        >
+          Back to import
+        </button>
+      </div>
+    );
+  }
+
+  const connect = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const t = await getAccessToken();
+      setToken(t);
+      const results = await listPlanCandidateFiles(t);
+      setFiles(results);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not connect to Google Drive.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const search = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      setFiles(await listPlanCandidateFiles(token, query));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Search failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pickFile = async (file: DriveFile) => {
+    if (!token) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const { text, kind } = await exportDriveFile(token, file);
+      const parsed = kind === 'sheet' ? parseCsv(text, file.name) : parseText(text, file.name);
+      navigate('/confirm', {
+        state: {
+          parsedPlan: parsed,
+          sourceType: 'drive',
+          sourceFileName: file.name,
+          sourceFileId: file.id,
+          sourceMimeType: file.mimeType,
+          sourceModifiedTime: file.modifiedTime,
+        },
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not import that file.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-5 px-5 pt-10">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">Import from Google Drive</h1>
+        <p className="mt-1 text-sm text-slate-500">Pick a Doc or Sheet with your workout plan.</p>
+      </div>
+
+      {!token ? (
+        <button
+          onClick={connect}
+          disabled={loading}
+          className="rounded-xl bg-brand-600 py-3.5 font-semibold text-white disabled:opacity-50"
+        >
+          {loading ? 'Connecting…' : 'Connect Google Drive'}
+        </button>
+      ) : (
+        <>
+          <div className="flex gap-2">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && search()}
+              placeholder="Search your files…"
+              className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5"
+            />
+            <button onClick={search} className="rounded-xl border border-slate-200 px-4 text-sm font-medium">
+              Search
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {files.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => pickFile(f)}
+                disabled={loading}
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left disabled:opacity-50"
+              >
+                <span className="text-xl">
+                  {f.mimeType.includes('spreadsheet') ? '📊' : '📄'}
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-slate-800">{f.name}</p>
+                  <p className="text-xs text-slate-400">Modified {dateFmt.format(new Date(f.modifiedTime))}</p>
+                </div>
+              </button>
+            ))}
+            {files.length === 0 && !loading && (
+              <p className="text-center text-sm text-slate-400">No Docs or Sheets found.</p>
+            )}
+          </div>
+        </>
+      )}
+
+      {error && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+    </div>
+  );
+}
