@@ -7,6 +7,7 @@ import PlansPage from './pages/PlansPage';
 import ImportPage from './pages/ImportPage';
 import ConfirmPage from './pages/ConfirmPage';
 import DriveImportPage from './pages/DriveImportPage';
+import SyncReviewPage from './pages/SyncReviewPage';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/import" element={<ImportPage />} />
         <Route path="/import/drive" element={<DriveImportPage />} />
         <Route path="/confirm" element={<ConfirmPage />} />
+        <Route path="/sync-review" element={<SyncReviewPage />} />
         <Route path="*" element={<Navigate to="/today" replace />} />
       </Routes>
     </Layout>

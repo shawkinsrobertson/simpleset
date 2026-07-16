@@ -116,6 +116,7 @@ export default function StatsPage() {
               {exercisesWithHistory.map((ex) => (
                 <option key={ex.id} value={ex.id}>
                   {ex.name}
+                  {ex.archived ? ' (archived)' : ''}
                 </option>
               ))}
             </select>

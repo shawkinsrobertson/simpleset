@@ -70,7 +70,14 @@ export default function DriveImportPage() {
       const { text, kind } = await exportDriveFile(token, file);
       const parsed = kind === 'sheet' ? parseCsv(text, file.name) : parseText(text, file.name);
       navigate('/confirm', {
-        state: { parsedPlan: parsed, sourceType: 'drive', sourceFileName: file.name, sourceFileId: file.id },
+        state: {
+          parsedPlan: parsed,
+          sourceType: 'drive',
+          sourceFileName: file.name,
+          sourceFileId: file.id,
+          sourceMimeType: file.mimeType,
+          sourceModifiedTime: file.modifiedTime,
+        },
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not import that file.');

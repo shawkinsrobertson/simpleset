@@ -15,7 +15,12 @@ export default function ImportPage() {
     try {
       const parsed = await parseFile(file);
       navigate('/confirm', {
-        state: { parsedPlan: parsed, sourceType: 'local', sourceFileName: file.name },
+        state: {
+          parsedPlan: parsed,
+          sourceType: 'local',
+          sourceFileName: file.name,
+          sourceModifiedTime: String(file.lastModified),
+        },
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong parsing that file.');

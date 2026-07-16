@@ -32,8 +32,11 @@ export default function TodayPage() {
     () => (openSession ? db.planDays.get(openSession.dayId) : Promise.resolve(undefined)),
     [openSession?.dayId],
   );
+  // includeArchived: a re-sync mid-workout must not yank an exercise out
+  // from under an already-open session — structural changes apply going
+  // forward (the next time a day is started), not retroactively.
   const { value: exercises } = useLiveValue(
-    () => (openSession ? getExercisesForDay(openSession.dayId) : Promise.resolve([])),
+    () => (openSession ? getExercisesForDay(openSession.dayId, { includeArchived: true }) : Promise.resolve([])),
     [openSession?.dayId],
   );
 

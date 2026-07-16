@@ -39,3 +39,12 @@ export async function exportDriveFile(token: string, file: DriveFile): Promise<{
   }
   return { text: await exportFile(token, file.id, 'text/plain'), kind: 'doc' };
 }
+
+/** Lightweight metadata-only check, used to gate re-sync prompts without a full export/parse. */
+export async function getFileModifiedTime(token: string, fileId: string): Promise<string> {
+  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=modifiedTime`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`Drive API error fetching file metadata (${res.status})`);
+  const data = await res.json();
+  return data.modifiedTime;
+}

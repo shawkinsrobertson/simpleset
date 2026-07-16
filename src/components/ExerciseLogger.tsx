@@ -28,6 +28,9 @@ export default function ExerciseLogger({ sessionId, exercise }: { sessionId: str
       reps,
       weight,
       rpe,
+      targetSetsAtLog: exercise.targetSets,
+      targetRepsAtLog: exercise.targetReps,
+      targetWeightAtLog: exercise.targetWeight,
     });
   };
 

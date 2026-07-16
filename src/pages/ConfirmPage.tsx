@@ -9,6 +9,8 @@ interface LocationState {
   sourceType: SourceType;
   sourceFileName?: string;
   sourceFileId?: string;
+  sourceMimeType?: string;
+  sourceModifiedTime?: string | null;
 }
 
 function emptyExercise(): ParsedExercise {
@@ -109,12 +111,13 @@ export default function ConfirmPage() {
           .map((d) => ({ ...d, exercises: d.exercises.filter((e) => e.name.trim().length > 0) }))
           .filter((d) => d.exercises.length > 0),
       };
-      const savedPlan = await createPlanFromParsed(
-        cleaned,
-        state.sourceType,
-        state.sourceFileName,
-        state.sourceFileId,
-      );
+      const savedPlan = await createPlanFromParsed(cleaned, {
+        sourceType: state.sourceType,
+        sourceFileName: state.sourceFileName,
+        sourceFileId: state.sourceFileId,
+        sourceMimeType: state.sourceMimeType,
+        sourceModifiedTime: state.sourceModifiedTime,
+      });
       navigate('/today', { replace: true, state: { justImportedPlanId: savedPlan.id } });
     } finally {
       setSaving(false);
