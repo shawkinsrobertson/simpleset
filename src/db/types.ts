@@ -34,6 +34,23 @@ export interface PlanDay {
   archived: boolean;
 }
 
+/** Circuit: do each exercise once in sequence, repeat the round. Superset: two+ exercises done back-to-back per set, no rest between. */
+export type ExerciseGroupType = 'circuit' | 'superset';
+
+/**
+ * Visual/organizational grouping of exercises within a day (e.g. "Circuit
+ * A: Pushup + Row + Squat, x3 rounds"). Display-only for V1 — it doesn't
+ * change how Today's tracking flow logs sets.
+ */
+export interface ExerciseGroup {
+  id: string;
+  planId: string;
+  dayId: string;
+  type: ExerciseGroupType;
+  order: number;
+  label: string | null;
+}
+
 export interface Exercise {
   id: string;
   planId: string;
@@ -48,6 +65,8 @@ export interface Exercise {
   /** Free-form rest prescription, e.g. "30s", "90s" — informational during tracking, never logged as a performance metric. */
   targetRest: string | null;
   notes: string | null;
+  /** Set when this exercise is part of a circuit/superset grouping — see ExerciseGroup. */
+  groupId: string | null;
   /**
    * Set when this exercise disappears from a re-imported source doc (or is
    * resolved as "different exercise" during a rename review). Never

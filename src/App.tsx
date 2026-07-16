@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import TodayPage from './pages/TodayPage';
 import PlanPage from './pages/PlanPage';
@@ -9,9 +9,14 @@ import ConfirmPage from './pages/ConfirmPage';
 import DriveImportPage from './pages/DriveImportPage';
 import SyncReviewPage from './pages/SyncReviewPage';
 
+const WIDE_ROUTES = ['/confirm', '/sync-review'];
+
 function App() {
+  const location = useLocation();
+  const wide = WIDE_ROUTES.includes(location.pathname);
+
   return (
-    <Layout>
+    <Layout wide={wide}>
       <Routes>
         <Route path="/" element={<Navigate to="/today" replace />} />
         <Route path="/today" element={<TodayPage />} />

@@ -1,3 +1,11 @@
+export type ExerciseGroupType = 'circuit' | 'superset';
+
+export interface ParsedGroup {
+  tempId: string;
+  type: ExerciseGroupType;
+  label: string | null;
+}
+
 export interface ParsedExercise {
   tempId: string;
   name: string;
@@ -7,6 +15,8 @@ export interface ParsedExercise {
   targetTime: string | null;
   targetRest: string | null;
   notes: string | null;
+  /** References a ParsedGroup.tempId within the same day, when this exercise is part of a circuit/superset. */
+  groupTempId: string | null;
   /** The raw source line/row this was parsed from, kept for the confirm screen. */
   raw: string;
 }
@@ -16,6 +26,7 @@ export interface ParsedDay {
   week: number;
   label: string;
   exercises: ParsedExercise[];
+  groups: ParsedGroup[];
 }
 
 export interface ParsedPlan {

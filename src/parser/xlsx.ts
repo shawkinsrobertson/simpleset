@@ -54,7 +54,7 @@ function parseStructuredSheet(rows: unknown[][], cols: Record<string, number>): 
 
     const dayVal = get('day') || `Week ${currentWeek}`;
     if (!currentDay || dayVal !== lastDayLabel) {
-      currentDay = { tempId: crypto.randomUUID(), week: currentWeek, label: dayVal, exercises: [] };
+      currentDay = { tempId: crypto.randomUUID(), week: currentWeek, label: dayVal, exercises: [], groups: [] };
       days.push(currentDay);
       lastDayLabel = dayVal;
     }
@@ -75,6 +75,7 @@ function parseStructuredSheet(rows: unknown[][], cols: Record<string, number>): 
       targetTime: timeVal || null,
       targetRest: restVal || null,
       notes: notesVal || null,
+      groupTempId: null,
       raw: row.map((c) => String(c ?? '')).join(' | '),
     };
     if (exercise.targetSets === null && exercise.targetReps === null && exercise.targetTime === null) {

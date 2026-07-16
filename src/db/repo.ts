@@ -1,5 +1,5 @@
 import { db, newId } from './db';
-import type { DiffEntry, Exercise, LoggedSet, PendingSync, Plan, PlanDay, PlanVersion, Session, SourceType } from './types';
+import type { DiffEntry, Exercise, ExerciseGroup, LoggedSet, PendingSync, Plan, PlanDay, PlanVersion, Session, SourceType } from './types';
 import type { ParsedPlan } from '../parser/types';
 import type { ApplyPlan } from '../sync/applyPlan';
 import { runApplyPlan } from '../sync/runApplyPlan';
@@ -28,6 +28,7 @@ export async function createPlanFromParsed(parsed: ParsedPlan, source: CreatePla
 
   const days: PlanDay[] = [];
   const exercises: Exercise[] = [];
+  const groups: ExerciseGroup[] = [];
   const diffSummary: DiffEntry[] = [];
 
   parsed.days.forEach((d, dayOrder) => {
@@ -40,6 +41,14 @@ export async function createPlanFromParsed(parsed: ParsedPlan, source: CreatePla
       archived: false,
     };
     days.push(day);
+
+    const groupIdByTempId = new Map<string, string>();
+    d.groups.forEach((g, groupOrder) => {
+      const groupId = newId();
+      groupIdByTempId.set(g.tempId, groupId);
+      groups.push({ id: groupId, planId: plan.id, dayId: day.id, type: g.type, order: groupOrder, label: g.label });
+    });
+
     d.exercises.forEach((e, exOrder) => {
       exercises.push({
         id: newId(),
@@ -53,6 +62,7 @@ export async function createPlanFromParsed(parsed: ParsedPlan, source: CreatePla
         targetTime: e.targetTime,
         targetRest: e.targetRest,
         notes: e.notes,
+        groupId: e.groupTempId ? (groupIdByTempId.get(e.groupTempId) ?? null) : null,
         archived: false,
       });
       diffSummary.push({ kind: 'new', dayLabel: d.label, exerciseName: e.name });
@@ -67,12 +77,13 @@ export async function createPlanFromParsed(parsed: ParsedPlan, source: CreatePla
     diffSummary,
   };
 
-  await db.transaction('rw', db.plans, db.planDays, db.exercises, db.planVersions, async () => {
+  await db.transaction('rw', db.plans, db.planDays, db.exercises, db.exerciseGroups, db.planVersions, async () => {
     const existing = await db.plans.toArray();
     await Promise.all(existing.filter((p) => p.isActive).map((p) => db.plans.update(p.id, { isActive: false })));
     await db.plans.add(plan);
     await db.planDays.bulkAdd(days);
     await db.exercises.bulkAdd(exercises);
+    if (groups.length > 0) await db.exerciseGroups.bulkAdd(groups);
     await db.planVersions.add(version);
   });
 
@@ -106,6 +117,7 @@ export async function deletePlan(planId: string): Promise<void> {
   const dayIds = days.map((d) => d.id);
   const exercises = await db.exercises.where('planId').equals(planId).toArray();
   const exerciseIds = exercises.map((e) => e.id);
+  const groups = await db.exerciseGroups.where('planId').equals(planId).toArray();
   const sessions = await db.sessions.where('planId').equals(planId).toArray();
   const sessionIds = sessions.map((s) => s.id);
   const loggedSets = await db.loggedSets.where('sessionId').anyOf(sessionIds).toArray();
@@ -114,11 +126,12 @@ export async function deletePlan(planId: string): Promise<void> {
 
   await db.transaction(
     'rw',
-    [db.plans, db.planDays, db.exercises, db.sessions, db.loggedSets, db.planVersions, db.pendingSyncs],
+    [db.plans, db.planDays, db.exercises, db.exerciseGroups, db.sessions, db.loggedSets, db.planVersions, db.pendingSyncs],
     async () => {
       await db.loggedSets.bulkDelete(loggedSets.map((s) => s.id));
       await db.sessions.bulkDelete(sessionIds);
       await db.exercises.bulkDelete(exerciseIds);
+      await db.exerciseGroups.bulkDelete(groups.map((g) => g.id));
       await db.planDays.bulkDelete(dayIds);
       await db.planVersions.bulkDelete(versions.map((v) => v.id));
       await db.pendingSyncs.bulkDelete(pending.map((p) => p.id));
@@ -139,9 +152,76 @@ export async function getExercisesForDay(dayId: string, opts: { includeArchived?
   return filtered.sort((a, b) => a.order - b.order);
 }
 
+export async function getExerciseGroupsForDay(dayId: string): Promise<ExerciseGroup[]> {
+  const groups = await db.exerciseGroups.where('dayId').equals(dayId).toArray();
+  return groups.sort((a, b) => a.order - b.order);
+}
+
+/** Writes one or more cloned copies of `dayId` into the plan, inserted right after it, and renumbers every day's `order` to match the final sequence. */
+async function insertClonedDays(planId: string, afterDayId: string, clones: { week: number; label: string }[]): Promise<void> {
+  const days = await getPlanDays(planId);
+  const idx = days.findIndex((d) => d.id === afterDayId);
+  if (idx === -1) return;
+
+  const sourceExercises = await getExercisesForDay(afterDayId);
+  const sourceGroups = await getExerciseGroupsForDay(afterDayId);
+
+  const newDays: PlanDay[] = [];
+  const newExercises: Exercise[] = [];
+  const newGroups: ExerciseGroup[] = [];
+
+  for (const clone of clones) {
+    const newDayId = newId();
+    const groupIdMap = new Map<string, string>();
+    sourceGroups.forEach((g) => {
+      const gid = newId();
+      groupIdMap.set(g.id, gid);
+      newGroups.push({ ...g, id: gid, dayId: newDayId });
+    });
+    sourceExercises.forEach((e) => {
+      newExercises.push({
+        ...e,
+        id: newId(),
+        dayId: newDayId,
+        groupId: e.groupId ? (groupIdMap.get(e.groupId) ?? null) : null,
+        archived: false,
+      });
+    });
+    newDays.push({ id: newDayId, planId, week: clone.week, order: 0, label: clone.label, archived: false });
+  }
+
+  const finalOrder = [...days.slice(0, idx + 1), ...newDays, ...days.slice(idx + 1)];
+
+  await db.transaction('rw', db.planDays, db.exercises, db.exerciseGroups, async () => {
+    await db.planDays.bulkAdd(newDays);
+    if (newExercises.length > 0) await db.exercises.bulkAdd(newExercises);
+    if (newGroups.length > 0) await db.exerciseGroups.bulkAdd(newGroups);
+    await Promise.all(finalOrder.map((d, i) => db.planDays.update(d.id, { order: i })));
+  });
+}
+
+/** Duplicates a saved day (with its exercises and groups) immediately after itself, same week. */
+export async function duplicateDayInDb(planId: string, dayId: string): Promise<void> {
+  const day = await db.planDays.get(dayId);
+  if (!day) return;
+  await insertClonedDays(planId, dayId, [{ week: day.week, label: `${day.label} (copy)` }]);
+}
+
+/** Clones a saved day across `weekCount` additional weeks, inserted right after it. */
+export async function repeatDayInDb(planId: string, dayId: string, weekCount: number): Promise<void> {
+  const day = await db.planDays.get(dayId);
+  if (!day) return;
+  const clones = Array.from({ length: weekCount }, (_, i) => ({ week: day.week + 1 + i, label: day.label }));
+  await insertClonedDays(planId, dayId, clones);
+}
+
 export async function getExercisesForPlan(planId: string, opts: { includeArchived?: boolean } = {}): Promise<Exercise[]> {
   const exs = await db.exercises.where('planId').equals(planId).toArray();
   return opts.includeArchived ? exs : exs.filter((e) => !e.archived);
+}
+
+export async function getExerciseGroupsForPlan(planId: string): Promise<ExerciseGroup[]> {
+  return db.exerciseGroups.where('planId').equals(planId).toArray();
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { ParsedDay, ParsedExercise, ParsedPlan } from './types';
+import { TIME_UNIT_FRAGMENT, formatTime } from '../lib/duration';
 
 /**
  * Narrow format assumption (per build spec): a document is a sequence of
@@ -24,29 +25,23 @@ const DAY_RE = /^day\s*(\d+)\b\s*[:\-–]?\s*(.*)$/i;
 const SET_REP_WEIGHT_RE =
   /(?<sets>\d+)\s*(?:x|×|sets?\s+of)\s*(?<reps>\d+(?:\s*-\s*\d+)?|amrap|max(?:imum)?)\s*(?:reps?)?(?:\s*(?:(?:x|×|@|at)\s*(?<weightA>\d+(?:\.\d+)?)\s*(?<unitA>lbs?|kgs?|kg|%)?|(?<weightB>\d+(?:\.\d+)?)\s*(?<unitB>lbs?|kgs?|kg|%)))?/i;
 
-const TIME_UNIT = '(?:s|sec|secs|seconds|min|mins|minutes)';
-
 // "3x30s", "3 x 45 sec" — a sets multiplier over a duration instead of reps.
 // The unit is mandatory here specifically so this doesn't also fire on
 // plain rep counts like "3x8" (handled by SET_REP_WEIGHT_RE instead); tried
 // before that pattern so "3x30s" isn't misread as 30 reps with a stray "s".
 const SETS_TIME_RE = new RegExp(
-  `(?<sets>\\d+)\\s*(?:x|×|sets?\\s+of)\\s*(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT})\\b`,
+  `(?<sets>\\d+)\\s*(?:x|×|sets?\\s+of)\\s*(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT_FRAGMENT})\\b`,
   'i',
 );
 
 // A bare duration with no sets multiplier — "Plank 45s", "Wall Sit 1min".
-const TIME_ONLY_RE = new RegExp(`(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT})\\b(?:\\s*hold)?`, 'i');
+const TIME_ONLY_RE = new RegExp(`(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT_FRAGMENT})\\b(?:\\s*hold)?`, 'i');
 
 // A rest prescription mentioned inline — "30s rest", "rest 90s", "rest: 2min".
 const REST_RE = new RegExp(
-  `(?:^|[\\s,;])(?:(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT})\\s*rest\\b|rest\\s*(?:of|for)?\\s*:?\\s*(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT}))`,
+  `(?:^|[\\s,;])(?:(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT_FRAGMENT})\\s*rest\\b|rest\\s*(?:of|for)?\\s*:?\\s*(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT_FRAGMENT}))`,
   'i',
 );
-
-function formatTime(value: string, unit: string): string {
-  return `${value}${/^min/i.test(unit) ? 'min' : 's'}`;
-}
 
 /** Pulls an inline rest mention ("...,  30s rest") out of trailing/notes text, if present. */
 function extractRest(text: string): { rest: string | null; remaining: string } {
@@ -112,6 +107,7 @@ function baseExercise(rawLine: string): ParsedExercise {
     targetTime: null,
     targetRest: null,
     notes: null,
+    groupTempId: null,
     raw: rawLine,
   };
 }
@@ -199,6 +195,7 @@ export function parsePlanText(text: string, fallbackName: string): ParsedPlan {
       week,
       label,
       exercises: [],
+      groups: [],
     };
     days.push(currentDay);
     dayOrder += 1;

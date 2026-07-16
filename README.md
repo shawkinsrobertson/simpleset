@@ -23,10 +23,40 @@ Other scripts: `npm run build`, `npm run test` (vitest), `npm run lint` (oxlint)
 ## How it works
 
 1. **Import** — upload a `.docx`/`.xlsx`/`.pdf`/`.txt` file, or connect Google Drive and pick a Doc/Sheet.
-2. **Parse & confirm** — the parser assumes a narrow format (a day header, then exercise lines like `Bench Press 3x8 135lb` or a timed `Plank 3x30s, 30s rest`) and expands from there; spreadsheets with `Exercise`/`Sets`/`Reps`/`Weight`/`Time`/`Rest`-style columns are read directly. Because free-form parsing is never perfect, every import lands on a confirm/edit screen — a directly-editable spreadsheet-style grid (click any cell to fix it) rather than a form to step through — before anything is saved.
+2. **Parse & confirm** — the parser assumes a narrow format (a day header, then exercise lines like `Bench Press 3x8 135lb` or a timed `Plank 3x30s, 30s rest`) and expands from there; spreadsheets with `Exercise`/`Sets`/`Reps`/`Weight`/`Time`/`Rest`-style columns are read directly. Because free-form parsing is never perfect, every import lands on a confirm/edit screen — a directly-editable spreadsheet-style grid, one compact card per exercise on mobile and a full table on wider screens — before anything is saved. See "Plan grid editor" below for what it can do.
 3. **Track** — work through the plan day by day with a fast, thumb-friendly set logger (stepper inputs for reps/weight or a duration for timed exercises like planks/holds, one-tap logging, optional RPE). Rest is shown as a prescription alongside the target, not something you log.
 4. **Stats** — volume over time, per-exercise weight/rep trends, and adherence (completed vs. skipped sessions).
 5. **Re-sync** — the source doc is treated as a living document. From Plans, "Re-sync from file" (or "Check for updates" for Drive plans) re-parses it and diffs against your current plan — see "Plan sync" below.
+
+## Plan grid editor
+
+The confirm screen (and the same components, reused for direct post-save
+editing from the Plan tab's "Duplicate day"/"Repeat across weeks…") is a
+real editable grid, not a form:
+
+- **Every cell is always editable** — click and type, no separate edit mode.
+- **Reps/Time is one merged, auto-detecting field**: typing a bare duration
+  ("30s", "2min") stores it as a time target and clears reps; anything else
+  (including rep ranges and "AMRAP") is treated as reps. The same
+  detection rule is shared with the parser (`src/lib/duration.ts`) so
+  manual entry and auto-parsing never disagree about what counts as a
+  duration.
+- **Drag-and-reorder** exercises within a day (`@dnd-kit`, touch + pointer
+  sensors, long-press-to-pick-up on mobile).
+- **Row actions** (insert above/below, duplicate, delete, select multiple)
+  via a kebab button — deliberately not gesture-only, since long-press/
+  right-click alone is an easy-to-miss affordance.
+- **Circuit/superset grouping**: long-press or right-click a row to enter
+  selection mode (the same pattern as Gmail/Photos — tap more rows to
+  add them), then group the selection. Grouped rows render with a bracket
+  and label in the grid, Plan browsing, and the Today tracking view.
+  Grouping is **display/organizational only** in V1 — it doesn't change
+  how sets get logged.
+- **Duplicate day** / **repeat a day across N weeks**, both at import and
+  later from the Plan tab for an already-saved plan.
+- The whole app shell stays phone-width (`max-w-md`) except the grid-heavy
+  confirm/sync-review screens, which widen on larger viewports since a
+  multi-column editor benefits from the extra room a phone never has.
 
 ## Plan sync (re-import)
 

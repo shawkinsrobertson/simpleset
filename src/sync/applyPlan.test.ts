@@ -28,6 +28,7 @@ function ex(overrides: Partial<Exercise>): Exercise {
     targetTime: null,
     targetRest: null,
     notes: null,
+    groupId: null,
     archived: false,
     ...overrides,
   };
@@ -42,12 +43,13 @@ function pex(overrides: Partial<ParsedExercise>): ParsedExercise {
     targetTime: null,
     targetRest: null,
     notes: null,
+    groupTempId: null,
     raw: '',
     ...overrides,
   };
 }
 function pday(overrides: Partial<ParsedDay>): ParsedDay {
-  return { tempId: id('pday'), week: 1, label: 'Day', exercises: [], ...overrides };
+  return { tempId: id('pday'), week: 1, label: 'Day', exercises: [], groups: [], ...overrides };
 }
 
 describe('buildApplyPlan', () => {
