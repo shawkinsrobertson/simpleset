@@ -43,6 +43,10 @@ export interface Exercise {
   targetSets: number | null;
   targetReps: string | null;
   targetWeight: string | null;
+  /** Free-form target duration per set, e.g. "30s", "1min" — for timed exercises (planks, holds, circuits). */
+  targetTime: string | null;
+  /** Free-form rest prescription, e.g. "30s", "90s" — informational during tracking, never logged as a performance metric. */
+  targetRest: string | null;
   notes: string | null;
   /**
    * Set when this exercise disappears from a re-imported source doc (or is
@@ -71,6 +75,8 @@ export interface LoggedSet {
   setNumber: number;
   reps: number | null;
   weight: number | null;
+  /** Actual time held/performed, in seconds — the timed-exercise analog of `reps`. */
+  timeSeconds: number | null;
   rpe: number | null;
   notes: string | null;
   timestamp: number;
@@ -82,6 +88,8 @@ export interface LoggedSet {
   targetSetsAtLog: number | null;
   targetRepsAtLog: string | null;
   targetWeightAtLog: string | null;
+  targetTimeAtLog: string | null;
+  targetRestAtLog: string | null;
 }
 
 /** One row per import/re-import of a plan — an audit trail and undo path. */

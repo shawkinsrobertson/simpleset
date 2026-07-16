@@ -46,6 +46,28 @@ export class SimpleSetDB extends Dexie {
           s.targetWeightAtLog = s.targetWeightAtLog ?? null;
         });
       });
+
+    this.version(3)
+      .stores({
+        plans: 'id, isActive, importDate',
+        planDays: 'id, planId, archived, [planId+order]',
+        exercises: 'id, planId, dayId, archived, [dayId+order]',
+        sessions: 'id, planId, dayId, date, status',
+        loggedSets: 'id, sessionId, exerciseId, timestamp',
+        planVersions: 'id, planId, importedAt',
+        pendingSyncs: 'id, planId',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('exercises').toCollection().modify((e) => {
+          e.targetTime = e.targetTime ?? null;
+          e.targetRest = e.targetRest ?? null;
+        });
+        await tx.table('loggedSets').toCollection().modify((s) => {
+          s.timeSeconds = s.timeSeconds ?? null;
+          s.targetTimeAtLog = s.targetTimeAtLog ?? null;
+          s.targetRestAtLog = s.targetRestAtLog ?? null;
+        });
+      });
   }
 }
 

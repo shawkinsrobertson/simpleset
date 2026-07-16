@@ -45,6 +45,8 @@ export async function runApplyPlan(plan: ApplyPlan): Promise<void> {
         targetSets: ne.targetSets,
         targetReps: ne.targetReps,
         targetWeight: ne.targetWeight,
+        targetTime: ne.targetTime,
+        targetRest: ne.targetRest,
         notes: ne.notes,
         archived: false,
       });
@@ -57,6 +59,8 @@ export async function runApplyPlan(plan: ApplyPlan): Promise<void> {
         targetSets: eu.targetSets,
         targetReps: eu.targetReps,
         targetWeight: eu.targetWeight,
+        targetTime: eu.targetTime,
+        targetRest: eu.targetRest,
         notes: eu.notes,
       });
     }

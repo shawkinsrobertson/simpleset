@@ -24,12 +24,55 @@ const DAY_RE = /^day\s*(\d+)\b\s*[:\-–]?\s*(.*)$/i;
 const SET_REP_WEIGHT_RE =
   /(?<sets>\d+)\s*(?:x|×|sets?\s+of)\s*(?<reps>\d+(?:\s*-\s*\d+)?|amrap|max(?:imum)?)\s*(?:reps?)?(?:\s*(?:(?:x|×|@|at)\s*(?<weightA>\d+(?:\.\d+)?)\s*(?<unitA>lbs?|kgs?|kg|%)?|(?<weightB>\d+(?:\.\d+)?)\s*(?<unitB>lbs?|kgs?|kg|%)))?/i;
 
+const TIME_UNIT = '(?:s|sec|secs|seconds|min|mins|minutes)';
+
+// "3x30s", "3 x 45 sec" — a sets multiplier over a duration instead of reps.
+// The unit is mandatory here specifically so this doesn't also fire on
+// plain rep counts like "3x8" (handled by SET_REP_WEIGHT_RE instead); tried
+// before that pattern so "3x30s" isn't misread as 30 reps with a stray "s".
+const SETS_TIME_RE = new RegExp(
+  `(?<sets>\\d+)\\s*(?:x|×|sets?\\s+of)\\s*(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT})\\b`,
+  'i',
+);
+
+// A bare duration with no sets multiplier — "Plank 45s", "Wall Sit 1min".
+const TIME_ONLY_RE = new RegExp(`(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT})\\b(?:\\s*hold)?`, 'i');
+
+// A rest prescription mentioned inline — "30s rest", "rest 90s", "rest: 2min".
+const REST_RE = new RegExp(
+  `(?:^|[\\s,;])(?:(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT})\\s*rest\\b|rest\\s*(?:of|for)?\\s*:?\\s*(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT}))`,
+  'i',
+);
+
+function formatTime(value: string, unit: string): string {
+  return `${value}${/^min/i.test(unit) ? 'min' : 's'}`;
+}
+
+/** Pulls an inline rest mention ("...,  30s rest") out of trailing/notes text, if present. */
+function extractRest(text: string): { rest: string | null; remaining: string } {
+  if (!text) return { rest: null, remaining: text };
+  const m = REST_RE.exec(text);
+  if (!m) return { rest: null, remaining: text };
+  const value = m[1] ?? m[3];
+  const unit = m[2] ?? m[4];
+  const remaining = (text.slice(0, m.index) + text.slice(m.index + m[0].length))
+    .replace(/^[\s,;]+|[\s,;]+$/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  return { rest: formatTime(value, unit), remaining };
+}
+
 function stripBullet(line: string): string {
   return line.replace(BULLET_RE, '').trim();
 }
 
+/** True if the line carries any recognizable target (reps, weight, or a duration). */
+function looksLikeTargetLine(line: string): boolean {
+  return SET_REP_WEIGHT_RE.test(line) || SETS_TIME_RE.test(line) || TIME_ONLY_RE.test(line);
+}
+
 function looksLikeHeaderFallback(line: string): boolean {
-  if (SET_REP_WEIGHT_RE.test(line)) return false;
+  if (looksLikeTargetLine(line)) return false;
   if (line.length > 45) return false;
   const words = line.split(/\s+/).filter(Boolean);
   if (words.length === 0 || words.length > 6) return false;
@@ -53,43 +96,87 @@ function looksLikeSectionHeader(line: string): boolean {
   return /[A-Z]/.test(line) && line === line.toUpperCase();
 }
 
+function splitNameAndTrailing(line: string, matchIndex: number, matchLength: number): { name: string; trailing: string } {
+  const name = line.slice(0, matchIndex).trim().replace(/[-:–,]+$/, '').trim();
+  const trailing = line.slice(matchIndex + matchLength).trim().replace(/^[-:–,]+/, '').trim();
+  return { name, trailing };
+}
+
+function baseExercise(rawLine: string): ParsedExercise {
+  return {
+    tempId: crypto.randomUUID(),
+    name: '',
+    targetSets: null,
+    targetReps: null,
+    targetWeight: null,
+    targetTime: null,
+    targetRest: null,
+    notes: null,
+    raw: rawLine,
+  };
+}
+
 function parseExerciseLine(rawLine: string): ParsedExercise | null {
   const line = stripBullet(rawLine);
   if (!line) return null;
 
-  const match = SET_REP_WEIGHT_RE.exec(line);
-  if (!match) {
-    // No recognizable sets/reps token — still capture the line as a named
-    // exercise with no targets, rather than silently dropping it.
+  // "3x30s" — sets x a duration instead of reps. Tried before the reps
+  // pattern below: the unit is mandatory here, so it only matches when a
+  // time unit is actually present, but it still has to go first or
+  // SET_REP_WEIGHT_RE would greedily read "30" as reps and leave a stray
+  // "s" dangling.
+  const setsTimeMatch = SETS_TIME_RE.exec(line);
+  if (setsTimeMatch) {
+    const g = setsTimeMatch.groups!;
+    const { name, trailing } = splitNameAndTrailing(line, setsTimeMatch.index, setsTimeMatch[0].length);
+    const { rest, remaining } = extractRest(trailing);
     return {
-      tempId: crypto.randomUUID(),
-      name: line,
-      targetSets: null,
-      targetReps: null,
-      targetWeight: null,
-      notes: null,
-      raw: rawLine,
+      ...baseExercise(rawLine),
+      name: name || '(unnamed exercise)',
+      targetSets: Number(g.sets),
+      targetTime: formatTime(g.time, g.timeUnit),
+      targetRest: rest,
+      notes: remaining || null,
     };
   }
 
-  const full = match[0];
-  const g = match.groups!;
-  const sets = g.sets;
-  const reps = g.reps;
-  const weight = g.weightA ?? g.weightB;
-  const unit = g.unitA ?? g.unitB;
-  const name = line.slice(0, match.index).trim().replace(/[-:–,]+$/, '').trim();
-  const trailing = line.slice(match.index + full.length).trim().replace(/^[-:–,]+/, '').trim();
+  // "3x8 135lb" — sets x reps, optionally with a weight.
+  const repMatch = SET_REP_WEIGHT_RE.exec(line);
+  if (repMatch) {
+    const g = repMatch.groups!;
+    const weight = g.weightA ?? g.weightB;
+    const unit = g.unitA ?? g.unitB;
+    const { name, trailing } = splitNameAndTrailing(line, repMatch.index, repMatch[0].length);
+    const { rest, remaining } = extractRest(trailing);
+    return {
+      ...baseExercise(rawLine),
+      name: name || '(unnamed exercise)',
+      targetSets: Number(g.sets),
+      targetReps: g.reps.replace(/\s*-\s*/, '-').toLowerCase(),
+      targetWeight: weight ? `${weight}${unit ? unit.toLowerCase() : ''}` : null,
+      targetRest: rest,
+      notes: remaining || null,
+    };
+  }
 
-  return {
-    tempId: crypto.randomUUID(),
-    name: name || '(unnamed exercise)',
-    targetSets: Number(sets),
-    targetReps: reps.replace(/\s*-\s*/, '-').toLowerCase(),
-    targetWeight: weight ? `${weight}${unit ? unit.toLowerCase() : ''}` : null,
-    notes: trailing || null,
-    raw: rawLine,
-  };
+  // "Plank 45s" / "Wall Sit 1min hold" — a bare duration, no sets multiplier.
+  const timeOnlyMatch = TIME_ONLY_RE.exec(line);
+  if (timeOnlyMatch) {
+    const g = timeOnlyMatch.groups!;
+    const { name, trailing } = splitNameAndTrailing(line, timeOnlyMatch.index, timeOnlyMatch[0].length);
+    const { rest, remaining } = extractRest(trailing);
+    return {
+      ...baseExercise(rawLine),
+      name: name || '(unnamed exercise)',
+      targetTime: formatTime(g.time, g.timeUnit),
+      targetRest: rest,
+      notes: remaining || null,
+    };
+  }
+
+  // No recognizable target at all — still capture the line as a named
+  // exercise with no targets, rather than silently dropping it.
+  return { ...baseExercise(rawLine), name: line };
 }
 
 export function parsePlanText(text: string, fallbackName: string): ParsedPlan {
@@ -123,7 +210,7 @@ export function parsePlanText(text: string, fallbackName: string): ParsedPlan {
 
     // First non-empty line, if it doesn't look like a day/week/exercise line,
     // is treated as the plan's title.
-    if (i === 0 && !WEEK_RE.test(line) && !DAY_RE.test(line) && !WEEKDAY_RE.test(line) && !SET_REP_WEIGHT_RE.test(line)) {
+    if (i === 0 && !WEEK_RE.test(line) && !DAY_RE.test(line) && !WEEKDAY_RE.test(line) && !looksLikeTargetLine(line)) {
       planName = line;
       continue;
     }
@@ -146,7 +233,7 @@ export function parsePlanText(text: string, fallbackName: string): ParsedPlan {
       continue;
     }
 
-    if (WEEKDAY_RE.test(line) && !SET_REP_WEIGHT_RE.test(line)) {
+    if (WEEKDAY_RE.test(line) && !looksLikeTargetLine(line)) {
       ensureDay(line, currentWeek);
       sawAnyHeader = true;
       continue;
@@ -174,8 +261,8 @@ export function parsePlanText(text: string, fallbackName: string): ParsedPlan {
 
     const exercise = parseExerciseLine(line);
     if (exercise) {
-      if (exercise.targetSets === null) {
-        warnings.push(`Couldn't find sets/reps for "${exercise.name}" — check it on the next screen.`);
+      if (exercise.targetSets === null && exercise.targetReps === null && exercise.targetTime === null) {
+        warnings.push(`Couldn't find sets/reps/time for "${exercise.name}" — check it on the next screen.`);
       }
       currentDay!.exercises.push(exercise);
     }

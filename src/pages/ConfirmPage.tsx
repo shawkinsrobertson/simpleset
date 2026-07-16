@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { ParsedDay, ParsedExercise, ParsedPlan } from '../parser/types';
 import type { SourceType } from '../db/types';
@@ -20,6 +20,8 @@ function emptyExercise(): ParsedExercise {
     targetSets: null,
     targetReps: null,
     targetWeight: null,
+    targetTime: null,
+    targetRest: null,
     notes: null,
     raw: '',
   };
@@ -28,6 +30,10 @@ function emptyExercise(): ParsedExercise {
 function emptyDay(week: number): ParsedDay {
   return { tempId: crypto.randomUUID(), week, label: 'New Day', exercises: [] };
 }
+
+// Borderless, always-editable cell inputs — the "spreadsheet" feel is the
+// point: no separate edit mode, click a cell and type.
+const CELL_INPUT = 'w-full rounded bg-transparent px-2 py-2 text-sm focus:bg-brand-50 focus:outline-none';
 
 export default function ConfirmPage() {
   const location = useLocation();
@@ -131,7 +137,7 @@ export default function ConfirmPage() {
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Confirm your plan</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Parsing free-form docs isn't perfect — double check the details below before saving.
+          Parsing free-form docs isn't perfect — click any cell below to fix it before saving.
         </p>
       </div>
 
@@ -155,103 +161,153 @@ export default function ConfirmPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-4">
-        {plan.days.map((day) => (
-          <div key={day.tempId} className="rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="flex items-start gap-2">
-              <div className="flex-1">
-                <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                  Day label
-                </label>
-                <input
-                  className="mt-0.5 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-medium text-slate-900"
-                  value={day.label}
-                  onChange={(e) => updateDay(day.tempId, { label: e.target.value })}
-                />
-              </div>
-              <div className="w-16">
-                <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Week</label>
-                <input
-                  type="number"
-                  min={1}
-                  className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-center"
-                  value={day.week}
-                  onChange={(e) => updateDay(day.tempId, { week: Number(e.target.value) || 1 })}
-                />
-              </div>
-              <button
-                aria-label="Remove day"
-                onClick={() => removeDay(day.tempId)}
-                className="mt-4 rounded-lg px-2 py-1.5 text-slate-400"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mt-3 flex flex-col gap-2">
-              {day.exercises.map((ex) => (
-                <div key={ex.tempId} className="rounded-xl bg-slate-50 p-2.5">
-                  <div className="flex gap-2">
-                    <input
-                      placeholder="Exercise name"
-                      className="flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium"
-                      value={ex.name}
-                      onChange={(e) => updateExercise(day.tempId, ex.tempId, { name: e.target.value })}
-                    />
-                    <button
-                      aria-label="Remove exercise"
-                      onClick={() => removeExercise(day.tempId, ex.tempId)}
-                      className="rounded-lg px-2 text-slate-400"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="mt-1.5 grid grid-cols-3 gap-1.5">
-                    <input
-                      placeholder="Sets"
-                      inputMode="numeric"
-                      className="rounded-lg border border-slate-200 px-2 py-1.5 text-center text-sm"
-                      value={ex.targetSets ?? ''}
-                      onChange={(e) =>
-                        updateExercise(day.tempId, ex.tempId, {
-                          targetSets: e.target.value ? Number(e.target.value) : null,
-                        })
-                      }
-                    />
-                    <input
-                      placeholder="Reps"
-                      className="rounded-lg border border-slate-200 px-2 py-1.5 text-center text-sm"
-                      value={ex.targetReps ?? ''}
-                      onChange={(e) => updateExercise(day.tempId, ex.tempId, { targetReps: e.target.value || null })}
-                    />
-                    <input
-                      placeholder="Weight"
-                      className="rounded-lg border border-slate-200 px-2 py-1.5 text-center text-sm"
-                      value={ex.targetWeight ?? ''}
-                      onChange={(e) =>
-                        updateExercise(day.tempId, ex.tempId, { targetWeight: e.target.value || null })
-                      }
-                    />
-                  </div>
-                </div>
-              ))}
-              <button
-                onClick={() => addExercise(day.tempId)}
-                className="rounded-lg border border-dashed border-slate-300 py-1.5 text-sm text-slate-500"
-              >
-                + Add exercise
-              </button>
-            </div>
-          </div>
-        ))}
-
-        <button
-          onClick={addDay}
-          className="rounded-xl border border-dashed border-slate-300 py-3 text-sm font-medium text-slate-500"
-        >
-          + Add day
-        </button>
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <table className="w-full min-w-[760px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              <th className="sticky left-0 z-10 w-56 bg-white px-2 py-2 shadow-[1px_0_0_rgba(0,0,0,0.06)]">Exercise</th>
+              <th className="w-14 px-2 py-2">Sets</th>
+              <th className="w-20 px-2 py-2">Reps</th>
+              <th className="w-20 px-2 py-2">Time</th>
+              <th className="w-20 px-2 py-2">Rest</th>
+              <th className="w-24 px-2 py-2">Weight</th>
+              <th className="px-2 py-2">Notes</th>
+              <th className="w-8 px-2 py-2" />
+            </tr>
+          </thead>
+          <tbody>
+            {plan.days.map((day) => (
+              <Fragment key={day.tempId}>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <td colSpan={8} className="px-2 py-1.5">
+                    <div className="sticky left-0 flex w-fit items-center gap-2">
+                      <input
+                        aria-label="Day label"
+                        className="min-w-0 flex-1 rounded bg-transparent px-1 py-1 text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none"
+                        value={day.label}
+                        onChange={(e) => updateDay(day.tempId, { label: e.target.value })}
+                      />
+                      <label className="flex items-center gap-1 text-xs text-slate-400 whitespace-nowrap">
+                        Week
+                        <input
+                          type="number"
+                          min={1}
+                          className="w-12 rounded bg-transparent px-1 py-1 text-center text-xs text-slate-700 focus:bg-white focus:outline-none"
+                          value={day.week}
+                          onChange={(e) => updateDay(day.tempId, { week: Number(e.target.value) || 1 })}
+                        />
+                      </label>
+                      <button
+                        onClick={() => addExercise(day.tempId)}
+                        className="whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600"
+                      >
+                        + Row
+                      </button>
+                      <button
+                        aria-label="Remove day"
+                        onClick={() => removeDay(day.tempId)}
+                        className="rounded px-1.5 py-1 text-slate-400"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {day.exercises.map((ex) => (
+                  <tr key={ex.tempId} className="group border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
+                    <td className="sticky left-0 z-10 bg-white px-1 shadow-[1px_0_0_rgba(0,0,0,0.06)] group-hover:bg-slate-50">
+                      <input
+                        placeholder="Exercise name"
+                        className={`${CELL_INPUT} font-medium`}
+                        value={ex.name}
+                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { name: e.target.value })}
+                      />
+                    </td>
+                    <td className="px-1">
+                      <input
+                        placeholder="—"
+                        inputMode="numeric"
+                        className={`${CELL_INPUT} text-center`}
+                        value={ex.targetSets ?? ''}
+                        onChange={(e) =>
+                          updateExercise(day.tempId, ex.tempId, {
+                            targetSets: e.target.value ? Number(e.target.value) : null,
+                          })
+                        }
+                      />
+                    </td>
+                    <td className="px-1">
+                      <input
+                        placeholder="—"
+                        className={`${CELL_INPUT} text-center`}
+                        value={ex.targetReps ?? ''}
+                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { targetReps: e.target.value || null })}
+                      />
+                    </td>
+                    <td className="px-1">
+                      <input
+                        placeholder="—"
+                        className={`${CELL_INPUT} text-center`}
+                        value={ex.targetTime ?? ''}
+                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { targetTime: e.target.value || null })}
+                      />
+                    </td>
+                    <td className="px-1">
+                      <input
+                        placeholder="—"
+                        className={`${CELL_INPUT} text-center`}
+                        value={ex.targetRest ?? ''}
+                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { targetRest: e.target.value || null })}
+                      />
+                    </td>
+                    <td className="px-1">
+                      <input
+                        placeholder="—"
+                        className={`${CELL_INPUT} text-center`}
+                        value={ex.targetWeight ?? ''}
+                        onChange={(e) =>
+                          updateExercise(day.tempId, ex.tempId, { targetWeight: e.target.value || null })
+                        }
+                      />
+                    </td>
+                    <td className="px-1">
+                      <input
+                        placeholder="—"
+                        className={CELL_INPUT}
+                        value={ex.notes ?? ''}
+                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { notes: e.target.value || null })}
+                      />
+                    </td>
+                    <td className="px-1 text-center">
+                      <button
+                        aria-label="Remove exercise"
+                        onClick={() => removeExercise(day.tempId, ex.tempId)}
+                        className="rounded px-1.5 py-1 text-slate-300 hover:text-slate-500"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {day.exercises.length === 0 && (
+                  <tr className="border-b border-slate-100">
+                    <td colSpan={8} className="px-3 py-2 text-xs text-slate-400">
+                      No exercises in this day yet — tap "+ Row" above to add one.
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
       </div>
+
+      <button
+        onClick={addDay}
+        className="rounded-xl border border-dashed border-slate-300 py-3 text-sm font-medium text-slate-500"
+      >
+        + Add day
+      </button>
 
       <div className="sticky bottom-20 flex flex-col gap-2 rounded-2xl bg-white/95 p-3 shadow-lg backdrop-blur">
         <p className="text-center text-xs text-slate-400">

@@ -50,6 +50,8 @@ export async function createPlanFromParsed(parsed: ParsedPlan, source: CreatePla
         targetSets: e.targetSets,
         targetReps: e.targetReps,
         targetWeight: e.targetWeight,
+        targetTime: e.targetTime,
+        targetRest: e.targetRest,
         notes: e.notes,
         archived: false,
       });
@@ -209,11 +211,14 @@ export async function logSet(input: {
   setNumber: number;
   reps: number | null;
   weight: number | null;
+  timeSeconds: number | null;
   rpe: number | null;
   notes?: string | null;
   targetSetsAtLog: number | null;
   targetRepsAtLog: string | null;
   targetWeightAtLog: string | null;
+  targetTimeAtLog: string | null;
+  targetRestAtLog: string | null;
 }): Promise<LoggedSet> {
   const set: LoggedSet = {
     id: newId(),
@@ -222,12 +227,15 @@ export async function logSet(input: {
     setNumber: input.setNumber,
     reps: input.reps,
     weight: input.weight,
+    timeSeconds: input.timeSeconds,
     rpe: input.rpe,
     notes: input.notes ?? null,
     timestamp: Date.now(),
     targetSetsAtLog: input.targetSetsAtLog,
     targetRepsAtLog: input.targetRepsAtLog,
     targetWeightAtLog: input.targetWeightAtLog,
+    targetTimeAtLog: input.targetTimeAtLog,
+    targetRestAtLog: input.targetRestAtLog,
   };
   await db.loggedSets.add(set);
   return set;

@@ -4,6 +4,8 @@ export interface ParsedExercise {
   targetSets: number | null;
   targetReps: string | null;
   targetWeight: string | null;
+  targetTime: string | null;
+  targetRest: string | null;
   notes: string | null;
   /** The raw source line/row this was parsed from, kept for the confirm screen. */
   raw: string;

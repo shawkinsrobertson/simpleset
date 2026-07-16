@@ -9,6 +9,8 @@ const HEADER_ALIASES: Record<string, string[]> = {
   sets: ['sets', 'set'],
   reps: ['reps', 'rep'],
   weight: ['weight', 'load', 'lbs', 'kg'],
+  time: ['time', 'duration', 'hold'],
+  rest: ['rest', 'rest time'],
   notes: ['notes', 'note', 'comments', 'rpe'],
 };
 
@@ -60,6 +62,8 @@ function parseStructuredSheet(rows: unknown[][], cols: Record<string, number>): 
     const setsVal = get('sets');
     const repsVal = get('reps');
     const weightVal = get('weight');
+    const timeVal = get('time');
+    const restVal = get('rest');
     const notesVal = get('notes');
 
     const exercise: ParsedExercise = {
@@ -68,11 +72,13 @@ function parseStructuredSheet(rows: unknown[][], cols: Record<string, number>): 
       targetSets: setsVal ? Number(setsVal) || null : null,
       targetReps: repsVal || null,
       targetWeight: weightVal || null,
+      targetTime: timeVal || null,
+      targetRest: restVal || null,
       notes: notesVal || null,
       raw: row.map((c) => String(c ?? '')).join(' | '),
     };
-    if (exercise.targetSets === null) {
-      warnings.push(`Couldn't find sets for "${exercise.name}" — check it on the next screen.`);
+    if (exercise.targetSets === null && exercise.targetReps === null && exercise.targetTime === null) {
+      warnings.push(`Couldn't find sets/reps/time for "${exercise.name}" — check it on the next screen.`);
     }
     currentDay.exercises.push(exercise);
   }

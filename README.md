@@ -23,8 +23,8 @@ Other scripts: `npm run build`, `npm run test` (vitest), `npm run lint` (oxlint)
 ## How it works
 
 1. **Import** — upload a `.docx`/`.xlsx`/`.pdf`/`.txt` file, or connect Google Drive and pick a Doc/Sheet.
-2. **Parse & confirm** — the parser assumes a narrow format (a day header, then exercise lines like `Bench Press 3x8 135lb`) and expands from there; spreadsheets with `Exercise`/`Sets`/`Reps`/`Weight`-style columns are read directly. Because free-form parsing is never perfect, every import lands on a confirm/edit screen before anything is saved.
-3. **Track** — work through the plan day by day with a fast, thumb-friendly set logger (stepper inputs, one-tap logging, optional RPE).
+2. **Parse & confirm** — the parser assumes a narrow format (a day header, then exercise lines like `Bench Press 3x8 135lb` or a timed `Plank 3x30s, 30s rest`) and expands from there; spreadsheets with `Exercise`/`Sets`/`Reps`/`Weight`/`Time`/`Rest`-style columns are read directly. Because free-form parsing is never perfect, every import lands on a confirm/edit screen — a directly-editable spreadsheet-style grid (click any cell to fix it) rather than a form to step through — before anything is saved.
+3. **Track** — work through the plan day by day with a fast, thumb-friendly set logger (stepper inputs for reps/weight or a duration for timed exercises like planks/holds, one-tap logging, optional RPE). Rest is shown as a prescription alongside the target, not something you log.
 4. **Stats** — volume over time, per-exercise weight/rep trends, and adherence (completed vs. skipped sessions).
 5. **Re-sync** — the source doc is treated as a living document. From Plans, "Re-sync from file" (or "Check for updates" for Drive plans) re-parses it and diffs against your current plan — see "Plan sync" below.
 

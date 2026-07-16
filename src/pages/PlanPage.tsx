@@ -68,8 +68,9 @@ export default function PlanPage() {
                     <div key={ex.id} className="flex items-center justify-between text-sm">
                       <span className="text-slate-700">{ex.name}</span>
                       <span className="text-slate-400">
-                        {ex.targetSets ?? '—'}×{ex.targetReps ?? '—'}
+                        {ex.targetSets ?? '—'}×{ex.targetReps ?? ex.targetTime ?? '—'}
                         {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
+                        {ex.targetRest ? ` · rest ${ex.targetRest}` : ''}
                       </span>
                     </div>
                   ))}
