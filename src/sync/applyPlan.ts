@@ -21,6 +21,8 @@ interface ExerciseFields {
   targetSets: number | null;
   targetReps: string | null;
   targetWeight: string | null;
+  targetTime: string | null;
+  targetRest: string | null;
   notes: string | null;
 }
 
@@ -52,6 +54,8 @@ function exerciseFields(order: number, m: ExerciseMatch): ExerciseFields {
     targetSets: p.targetSets,
     targetReps: p.targetReps,
     targetWeight: p.targetWeight,
+    targetTime: p.targetTime,
+    targetRest: p.targetRest,
     notes: p.notes,
   };
 }

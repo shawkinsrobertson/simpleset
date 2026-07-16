@@ -37,13 +37,22 @@ export function similarity(a: string, b: string): number {
 /** Below this, two names are treated as unrelated (plain new + removed, no rename prompt). */
 export const FUZZY_RENAME_THRESHOLD = 0.5;
 
-function formatTarget(sets: number | null, reps: string | null, weight: string | null): string {
-  return `${sets ?? '—'}×${reps ?? '—'}${weight ? ` @ ${weight}` : ''}`;
+function formatTarget(
+  sets: number | null,
+  reps: string | null,
+  time: string | null,
+  weight: string | null,
+  rest: string | null,
+): string {
+  let out = `${sets ?? '—'}×${reps ?? time ?? '—'}`;
+  if (weight) out += ` @ ${weight}`;
+  if (rest) out += ` (rest ${rest})`;
+  return out;
 }
 
 function describeTargetChange(ex: Exercise, parsed: ParsedExercise): string | undefined {
-  const oldStr = formatTarget(ex.targetSets, ex.targetReps, ex.targetWeight);
-  const newStr = formatTarget(parsed.targetSets, parsed.targetReps, parsed.targetWeight);
+  const oldStr = formatTarget(ex.targetSets, ex.targetReps, ex.targetTime, ex.targetWeight, ex.targetRest);
+  const newStr = formatTarget(parsed.targetSets, parsed.targetReps, parsed.targetTime, parsed.targetWeight, parsed.targetRest);
   if (oldStr === newStr && (ex.notes ?? '') === (parsed.notes ?? '')) return undefined;
   return `${oldStr} → ${newStr}`;
 }

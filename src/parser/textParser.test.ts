@@ -134,4 +134,74 @@ Bench Press 3x8 135lb
     expect(plan.days).toHaveLength(1);
     expect(plan.days[0].label).toBe('Push Day');
   });
+
+  it('parses "sets x duration" as a timed exercise, not reps', () => {
+    const text = `
+Day 1
+Plank 3x30s
+Wall Sit 3 x 45 sec
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Plank',
+      targetSets: 3,
+      targetReps: null,
+      targetTime: '30s',
+    });
+    expect(plan.days[0].exercises[1]).toMatchObject({
+      name: 'Wall Sit',
+      targetSets: 3,
+      targetTime: '45s',
+    });
+  });
+
+  it('parses a bare duration with no sets multiplier', () => {
+    const text = `
+Day 1
+Dead Hang 45s
+Side Plank 1min hold
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Dead Hang',
+      targetSets: null,
+      targetTime: '45s',
+    });
+    expect(plan.days[0].exercises[1]).toMatchObject({
+      name: 'Side Plank',
+      targetTime: '1min',
+    });
+  });
+
+  it('extracts an inline rest mention into targetRest, separate from notes', () => {
+    const text = `
+Day 1
+Plank 3x30s, 30s rest
+Bench Press 3x8 135lb - rest 90s
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Plank',
+      targetTime: '30s',
+      targetRest: '30s',
+      notes: null,
+    });
+    expect(plan.days[0].exercises[1]).toMatchObject({
+      name: 'Bench Press',
+      targetWeight: '135lb',
+      targetRest: '90s',
+      notes: null,
+    });
+  });
+
+  it('does not misread "3x30s" as 30 reps with a stray unit', () => {
+    // Regression guard for the sets/reps regex vs. sets/time regex ordering.
+    const text = `
+Day 1
+Squat Hold 3x30s
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0].targetReps).toBeNull();
+    expect(plan.days[0].exercises[0].targetTime).toBe('30s');
+  });
 });

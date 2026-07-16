@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Exercise } from '../db/types';
 import { deleteLoggedSet, getLoggedSetsForExercise, logSet } from '../db/repo';
-import { guessRepsFromTarget, guessWeightFromTarget } from '../lib/targets';
+import { formatSeconds, guessRepsFromTarget, guessSecondsFromTarget, guessWeightFromTarget } from '../lib/targets';
 import Stepper from './Stepper';
 
 export default function ExerciseLogger({ sessionId, exercise }: { sessionId: string; exercise: Exercise }) {
@@ -11,7 +11,10 @@ export default function ExerciseLogger({ sessionId, exercise }: { sessionId: str
     [sessionId, exercise.id],
   );
 
+  const isTimed = exercise.targetTime != null;
+
   const [reps, setReps] = useState<number | null>(() => guessRepsFromTarget(exercise.targetReps));
+  const [seconds, setSeconds] = useState<number | null>(() => guessSecondsFromTarget(exercise.targetTime));
   const [weight, setWeight] = useState<number | null>(() => guessWeightFromTarget(exercise.targetWeight));
   const [showRpe, setShowRpe] = useState(false);
   const [rpe, setRpe] = useState<number | null>(null);
@@ -25,12 +28,15 @@ export default function ExerciseLogger({ sessionId, exercise }: { sessionId: str
       sessionId,
       exerciseId: exercise.id,
       setNumber: doneCount + 1,
-      reps,
+      reps: isTimed ? null : reps,
       weight,
+      timeSeconds: isTimed ? seconds : null,
       rpe,
       targetSetsAtLog: exercise.targetSets,
       targetRepsAtLog: exercise.targetReps,
       targetWeightAtLog: exercise.targetWeight,
+      targetTimeAtLog: exercise.targetTime,
+      targetRestAtLog: exercise.targetRest,
     });
   };
 
@@ -40,8 +46,9 @@ export default function ExerciseLogger({ sessionId, exercise }: { sessionId: str
         <div>
           <h3 className="font-semibold text-slate-900">{exercise.name}</h3>
           <p className="text-xs text-slate-500">
-            Target: {exercise.targetSets ?? '—'} × {exercise.targetReps ?? '—'}
+            Target: {exercise.targetSets ?? '—'} × {exercise.targetReps ?? exercise.targetTime ?? '—'}
             {exercise.targetWeight ? ` @ ${exercise.targetWeight}` : ''}
+            {exercise.targetRest ? ` · rest ${exercise.targetRest}` : ''}
           </p>
           {exercise.notes && <p className="mt-0.5 text-xs text-slate-400">{exercise.notes}</p>}
         </div>
@@ -59,7 +66,7 @@ export default function ExerciseLogger({ sessionId, exercise }: { sessionId: str
               className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
               title="Tap to remove"
             >
-              #{i + 1} {s.reps ?? '—'}×{s.weight ?? '—'}
+              #{i + 1} {s.timeSeconds != null ? formatSeconds(s.timeSeconds) : (s.reps ?? '—')}×{s.weight ?? '—'}
               {s.rpe ? ` @${s.rpe}` : ''} ✕
             </button>
           ))}
@@ -67,7 +74,11 @@ export default function ExerciseLogger({ sessionId, exercise }: { sessionId: str
       )}
 
       <div className="mt-4 flex items-end justify-center gap-4">
-        <Stepper label="Reps" value={reps} onChange={setReps} step={1} />
+        {isTimed ? (
+          <Stepper label="Seconds" value={seconds} onChange={setSeconds} step={5} />
+        ) : (
+          <Stepper label="Reps" value={reps} onChange={setReps} step={1} />
+        )}
         <Stepper label="Weight" value={weight} onChange={setWeight} step={5} />
         {showRpe ? (
           <Stepper label="RPE" value={rpe} onChange={setRpe} step={0.5} min={1} />
