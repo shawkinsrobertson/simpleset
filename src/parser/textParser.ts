@@ -37,6 +37,22 @@ function looksLikeHeaderFallback(line: string): boolean {
   return true;
 }
 
+const SECTION_KEYWORD_RE = /^(warm[\s-]?up|main\s*set|cool[\s-]?down|circuit|superset|finisher)\b/i;
+
+/**
+ * Stricter than looksLikeHeaderFallback — used once we're already inside a
+ * day, where treating *every* short numberless line as a new section would
+ * fragment a plain exercise list (e.g. a circuit with shared set/rest
+ * timing instead of per-line numbers) into a run of bogus one-exercise
+ * "days". Only promote when the line reads like an actual section label:
+ * ALL CAPS, or a recognized workout section keyword.
+ */
+function looksLikeSectionHeader(line: string): boolean {
+  if (!looksLikeHeaderFallback(line)) return false;
+  if (SECTION_KEYWORD_RE.test(line)) return true;
+  return /[A-Z]/.test(line) && line === line.toUpperCase();
+}
+
 function parseExerciseLine(rawLine: string): ParsedExercise | null {
   const line = stripBullet(rawLine);
   if (!line) return null;
@@ -142,9 +158,11 @@ export function parsePlanText(text: string, fallbackName: string): ParsedPlan {
       continue;
     }
 
-    if (currentDay && looksLikeHeaderFallback(line) && !SET_REP_WEIGHT_RE.test(line)) {
-      // A short, non-exercise-looking line while already inside a day is
-      // most likely a new day/section header (e.g. "Push Day", "Upper A").
+    if (currentDay && looksLikeSectionHeader(line)) {
+      // A line that reads like an actual section label (ALL CAPS, or a
+      // known keyword like "MAIN SET") starts a new day/section. Plain
+      // short exercise names do NOT — otherwise a numberless exercise
+      // list fragments into one bogus "day" per line.
       ensureDay(line, currentWeek);
       continue;
     }
