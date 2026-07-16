@@ -21,13 +21,15 @@ function planWithTwoDays(): ParsedPlan {
         tempId: id(),
         week: 1,
         label: 'Day 1: Push',
-        exercises: [{ tempId: id(), name: 'Bench Press', targetSets: 3, targetReps: '8', targetWeight: '135lb', targetTime: null, targetRest: null, notes: null, raw: '' }],
+        exercises: [{ tempId: id(), name: 'Bench Press', targetSets: 3, targetReps: '8', targetWeight: '135lb', targetTime: null, targetRest: null, notes: null, groupTempId: null, raw: '' }],
+        groups: [],
       },
       {
         tempId: id(),
         week: 1,
         label: 'Day 2: Pull',
-        exercises: [{ tempId: id(), name: 'Row', targetSets: 3, targetReps: '8', targetWeight: '100lb', targetTime: null, targetRest: null, notes: null, raw: '' }],
+        exercises: [{ tempId: id(), name: 'Row', targetSets: 3, targetReps: '8', targetWeight: '100lb', targetTime: null, targetRest: null, notes: null, groupTempId: null, raw: '' }],
+        groups: [],
       },
     ],
   };
@@ -48,8 +50,8 @@ describe('checkAndApplyPendingSync — "apply from next cycle"', () => {
       name: 'Two Day Plan',
       warnings: [],
       days: [
-        { tempId: id(), week: 1, label: 'Day 1: Push', exercises: [{ tempId: id(), name: 'Bench Press', targetSets: 3, targetReps: '10', targetWeight: '145lb', targetTime: null, targetRest: null, notes: null, raw: '' }] },
-        { tempId: id(), week: 1, label: 'Day 2: Pull', exercises: [{ tempId: id(), name: 'Row', targetSets: 3, targetReps: '8', targetWeight: '100lb', targetTime: null, targetRest: null, notes: null, raw: '' }] },
+        { tempId: id(), week: 1, label: 'Day 1: Push', exercises: [{ tempId: id(), name: 'Bench Press', targetSets: 3, targetReps: '10', targetWeight: '145lb', targetTime: null, targetRest: null, notes: null, groupTempId: null, raw: '' }], groups: [] },
+        { tempId: id(), week: 1, label: 'Day 2: Pull', exercises: [{ tempId: id(), name: 'Row', targetSets: 3, targetReps: '8', targetWeight: '100lb', targetTime: null, targetRest: null, notes: null, groupTempId: null, raw: '' }], groups: [] },
       ],
     };
     const existingDays = await getPlanDays(plan.id);

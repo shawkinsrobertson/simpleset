@@ -9,11 +9,12 @@ const TABS = [
   { to: '/plans', label: 'Plans', icon: '⚙️' },
 ];
 
-export default function Layout({ children }: { children: ReactNode }) {
+export default function Layout({ children, wide }: { children: ReactNode; wide?: boolean }) {
+  const maxWidth = wide ? 'max-w-4xl' : 'max-w-md';
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
+    <div className={`mx-auto flex min-h-screen ${maxWidth} flex-col bg-slate-50 transition-[max-width]`}>
       <main className="flex-1 overflow-y-auto pb-20">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md border-t border-slate-200 bg-white/95 backdrop-blur">
+      <nav className={`fixed inset-x-0 bottom-0 mx-auto flex ${maxWidth} border-t border-slate-200 bg-white/95 backdrop-blur`}>
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}

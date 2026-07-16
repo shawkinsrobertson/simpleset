@@ -48,11 +48,16 @@ export async function runApplyPlan(plan: ApplyPlan): Promise<void> {
         targetTime: ne.targetTime,
         targetRest: ne.targetRest,
         notes: ne.notes,
+        // Re-synced text never carries group info (the parser doesn't detect
+        // circuits/supersets) — new exercises from a diff always land ungrouped.
+        groupId: null,
         archived: false,
       });
     }
 
     for (const eu of plan.exerciseUpdates) {
+      // groupId is deliberately omitted — a re-sync updates targets, not an
+      // exercise's manually-assigned circuit/superset grouping.
       await db.exercises.update(eu.exerciseId, {
         order: eu.order,
         name: eu.name,

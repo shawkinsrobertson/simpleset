@@ -1,8 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getExercisesForPlan, getPlanDays, getOpenSession, startSession } from '../db/repo';
+import {
+  duplicateDayInDb,
+  getExerciseGroupsForPlan,
+  getExercisesForPlan,
+  getPlanDays,
+  getOpenSession,
+  repeatDayInDb,
+  startSession,
+} from '../db/repo';
 import { useActivePlan } from '../hooks/useActivePlan';
 import { useLiveValue } from '../hooks/useLiveValue';
+import Modal from '../components/Modal';
+import type { Exercise, ExerciseGroup } from '../db/types';
+import { groupIntoRuns } from '../lib/groupRuns';
 
 export default function PlanPage() {
   const { loading: planLoading, plan } = useActivePlan();
@@ -11,11 +22,17 @@ export default function PlanPage() {
     () => (plan ? getExercisesForPlan(plan.id) : Promise.resolve([])),
     [plan?.id],
   );
+  const { value: groups } = useLiveValue(
+    () => (plan ? getExerciseGroupsForPlan(plan.id) : Promise.resolve([])),
+    [plan?.id],
+  );
   const { value: openSession } = useLiveValue(
     () => (plan ? getOpenSession(plan.id) : Promise.resolve(undefined)),
     [plan?.id],
   );
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [repeatDayId, setRepeatDayId] = useState<string | null>(null);
+  const [repeatWeeks, setRepeatWeeks] = useState(1);
 
   if (planLoading) return null;
 
@@ -31,10 +48,16 @@ export default function PlanPage() {
     );
   }
 
-  const exercisesByDay = new Map<string, typeof exercises>();
+  const exercisesByDay = new Map<string, Exercise[]>();
   exercises?.forEach((e) => {
     exercisesByDay.set(e.dayId, [...(exercisesByDay.get(e.dayId) ?? []), e]);
   });
+  const groupsByDay = new Map<string, ExerciseGroup[]>();
+  groups?.forEach((g) => {
+    groupsByDay.set(g.dayId, [...(groupsByDay.get(g.dayId) ?? []), g]);
+  });
+
+  const repeatDay = days?.find((d) => d.id === repeatDayId);
 
   return (
     <div className="flex flex-col gap-4 px-5 pt-8">
@@ -46,6 +69,8 @@ export default function PlanPage() {
       <div className="flex flex-col gap-2.5">
         {days?.map((day) => {
           const dayExercises = (exercisesByDay.get(day.id) ?? []).sort((a, b) => a.order - b.order);
+          const dayGroups = groupsByDay.get(day.id) ?? [];
+          const runs = groupIntoRuns(dayExercises, dayGroups);
           const isOpen = expanded === day.id;
           return (
             <div key={day.id} className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -64,20 +89,51 @@ export default function PlanPage() {
 
               {isOpen && (
                 <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3">
-                  {dayExercises.map((ex) => (
-                    <div key={ex.id} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-700">{ex.name}</span>
-                      <span className="text-slate-400">
-                        {ex.targetSets ?? '—'}×{ex.targetReps ?? ex.targetTime ?? '—'}
-                        {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
-                        {ex.targetRest ? ` · rest ${ex.targetRest}` : ''}
-                      </span>
+                  {runs.map((run, runIdx) => (
+                    <div
+                      key={run.group?.id ?? `solo-${runIdx}`}
+                      className={run.group ? 'rounded-lg border-l-4 border-brand-300 bg-brand-50/40 py-1 pl-2' : ''}
+                    >
+                      {run.group && (
+                        <p className="mb-0.5 text-[11px] font-semibold text-brand-700">
+                          {run.group.label ?? (run.group.type === 'circuit' ? 'Circuit' : 'Superset')}
+                        </p>
+                      )}
+                      {run.exercises.map((ex) => (
+                        <div key={ex.id} className="flex items-center justify-between text-sm">
+                          <span className="text-slate-700">{ex.name}</span>
+                          <span className="text-slate-400">
+                            {ex.targetSets ?? '—'}×{ex.targetReps ?? ex.targetTime ?? '—'}
+                            {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
+                            {ex.targetRest ? ` · rest ${ex.targetRest}` : ''}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   ))}
+
+                  <div className="mt-1 flex gap-2">
+                    <button
+                      onClick={() => duplicateDayInDb(plan.id, day.id)}
+                      className="flex-1 rounded-lg border border-slate-200 py-2 text-xs font-medium text-slate-600"
+                    >
+                      Duplicate day
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRepeatDayId(day.id);
+                        setRepeatWeeks(1);
+                      }}
+                      className="flex-1 rounded-lg border border-slate-200 py-2 text-xs font-medium text-slate-600"
+                    >
+                      Repeat across weeks…
+                    </button>
+                  </div>
+
                   {!openSession && (
                     <button
                       onClick={() => startSession(plan.id, day.id)}
-                      className="mt-2 rounded-lg border border-slate-200 py-2 text-sm font-medium text-brand-600"
+                      className="mt-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-brand-600"
                     >
                       Start this day
                     </button>
@@ -88,6 +144,34 @@ export default function PlanPage() {
           );
         })}
       </div>
+
+      {repeatDay && (
+        <Modal title={`Repeat "${repeatDay.label}"`} onClose={() => setRepeatDayId(null)}>
+          <p className="text-sm text-slate-500">
+            Add copies of this day for the next N weeks, keeping the same exercises.
+          </p>
+          <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+            Number of additional weeks
+            <input
+              type="number"
+              min={1}
+              max={52}
+              value={repeatWeeks}
+              onChange={(e) => setRepeatWeeks(Math.max(1, Number(e.target.value) || 1))}
+              className="w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-center"
+            />
+          </label>
+          <button
+            onClick={async () => {
+              await repeatDayInDb(plan.id, repeatDay.id, repeatWeeks);
+              setRepeatDayId(null);
+            }}
+            className="mt-4 w-full rounded-xl bg-brand-600 py-3 text-center font-semibold text-white"
+          >
+            Add {repeatWeeks} week{repeatWeeks === 1 ? '' : 's'}
+          </button>
+        </Modal>
+      )}
     </div>
   );
 }

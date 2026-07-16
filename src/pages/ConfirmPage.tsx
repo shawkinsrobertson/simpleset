@@ -1,8 +1,10 @@
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { ParsedDay, ParsedExercise, ParsedPlan } from '../parser/types';
+import type { ExerciseGroupType, ParsedDay, ParsedExercise, ParsedPlan } from '../parser/types';
 import type { SourceType } from '../db/types';
 import { createPlanFromParsed } from '../db/repo';
+import { cloneDayForWeek, repeatDayAcrossWeeks } from '../lib/duplicateDay';
+import DayBlock from '../components/planGrid/DayBlock';
 
 interface LocationState {
   parsedPlan: ParsedPlan;
@@ -23,17 +25,20 @@ function emptyExercise(): ParsedExercise {
     targetTime: null,
     targetRest: null,
     notes: null,
+    groupTempId: null,
     raw: '',
   };
 }
 
 function emptyDay(week: number): ParsedDay {
-  return { tempId: crypto.randomUUID(), week, label: 'New Day', exercises: [] };
+  return { tempId: crypto.randomUUID(), week, label: 'New Day', exercises: [], groups: [] };
 }
 
-// Borderless, always-editable cell inputs — the "spreadsheet" feel is the
-// point: no separate edit mode, click a cell and type.
-const CELL_INPUT = 'w-full rounded bg-transparent px-2 py-2 text-sm focus:bg-brand-50 focus:outline-none';
+function groupOrdinalLabel(existingGroups: { label: string | null }[], type: ExerciseGroupType): string {
+  const count = existingGroups.filter((g) => g.label?.toLowerCase().startsWith(type)).length;
+  const letter = String.fromCharCode(65 + count); // A, B, C...
+  return `${type === 'circuit' ? 'Circuit' : 'Superset'} ${letter}`;
+}
 
 export default function ConfirmPage() {
   const location = useLocation();
@@ -69,42 +74,96 @@ export default function ConfirmPage() {
     setPlan((p) => p && { ...p, days: [...p.days, emptyDay(p.days.at(-1)?.week ?? 1)] });
   };
 
+  const duplicateDay = (dayTempId: string) => {
+    setPlan((p) => {
+      if (!p) return p;
+      const idx = p.days.findIndex((d) => d.tempId === dayTempId);
+      if (idx === -1) return p;
+      const clone = cloneDayForWeek(p.days[idx], p.days[idx].week, `${p.days[idx].label} (copy)`);
+      const days = [...p.days];
+      days.splice(idx + 1, 0, clone);
+      return { ...p, days };
+    });
+  };
+
+  const repeatDay = (dayTempId: string, weekCount: number) => {
+    setPlan((p) => {
+      if (!p) return p;
+      const idx = p.days.findIndex((d) => d.tempId === dayTempId);
+      if (idx === -1) return p;
+      const startWeek = p.days[idx].week + 1;
+      const copies = repeatDayAcrossWeeks(p.days[idx], weekCount, startWeek);
+      const days = [...p.days];
+      days.splice(idx + 1, 0, ...copies);
+      return { ...p, days };
+    });
+  };
+
+  const withDay = (dayTempId: string, fn: (d: ParsedDay) => ParsedDay) => {
+    setPlan((p) => p && { ...p, days: p.days.map((d) => (d.tempId === dayTempId ? fn(d) : d)) });
+  };
+
   const updateExercise = (dayTempId: string, exTempId: string, patch: Partial<ParsedExercise>) => {
-    setPlan(
-      (p) =>
-        p && {
-          ...p,
-          days: p.days.map((d) =>
-            d.tempId === dayTempId
-              ? { ...d, exercises: d.exercises.map((e) => (e.tempId === exTempId ? { ...e, ...patch } : e)) }
-              : d,
-          ),
-        },
-    );
+    withDay(dayTempId, (d) => ({
+      ...d,
+      exercises: d.exercises.map((e) => (e.tempId === exTempId ? { ...e, ...patch } : e)),
+    }));
   };
 
   const removeExercise = (dayTempId: string, exTempId: string) => {
-    setPlan(
-      (p) =>
-        p && {
-          ...p,
-          days: p.days.map((d) =>
-            d.tempId === dayTempId ? { ...d, exercises: d.exercises.filter((e) => e.tempId !== exTempId) } : d,
-          ),
-        },
-    );
+    withDay(dayTempId, (d) => ({ ...d, exercises: d.exercises.filter((e) => e.tempId !== exTempId) }));
   };
 
   const addExercise = (dayTempId: string) => {
-    setPlan(
-      (p) =>
-        p && {
-          ...p,
-          days: p.days.map((d) =>
-            d.tempId === dayTempId ? { ...d, exercises: [...d.exercises, emptyExercise()] } : d,
-          ),
-        },
-    );
+    withDay(dayTempId, (d) => ({ ...d, exercises: [...d.exercises, emptyExercise()] }));
+  };
+
+  const insertExercise = (dayTempId: string, afterExTempId: string | null) => {
+    withDay(dayTempId, (d) => {
+      const exercises = [...d.exercises];
+      const insertAt = afterExTempId ? exercises.findIndex((e) => e.tempId === afterExTempId) + 1 : 0;
+      exercises.splice(insertAt, 0, emptyExercise());
+      return { ...d, exercises };
+    });
+  };
+
+  const duplicateExercise = (dayTempId: string, exTempId: string) => {
+    withDay(dayTempId, (d) => {
+      const idx = d.exercises.findIndex((e) => e.tempId === exTempId);
+      if (idx === -1) return d;
+      const clone = { ...d.exercises[idx], tempId: crypto.randomUUID() };
+      const exercises = [...d.exercises];
+      exercises.splice(idx + 1, 0, clone);
+      return { ...d, exercises };
+    });
+  };
+
+  const reorderExercises = (dayTempId: string, newOrderTempIds: string[]) => {
+    withDay(dayTempId, (d) => {
+      const byId = new Map(d.exercises.map((e) => [e.tempId, e]));
+      return { ...d, exercises: newOrderTempIds.map((id) => byId.get(id)!) };
+    });
+  };
+
+  const groupExercises = (dayTempId: string, exTempIds: string[], type: ExerciseGroupType) => {
+    withDay(dayTempId, (d) => {
+      const groupTempId = crypto.randomUUID();
+      const label = groupOrdinalLabel(d.groups, type);
+      const idsToGroup = new Set(exTempIds);
+      return {
+        ...d,
+        groups: [...d.groups, { tempId: groupTempId, type, label }],
+        exercises: d.exercises.map((e) => (idsToGroup.has(e.tempId) ? { ...e, groupTempId } : e)),
+      };
+    });
+  };
+
+  const ungroup = (dayTempId: string, groupTempId: string) => {
+    withDay(dayTempId, (d) => ({
+      ...d,
+      groups: d.groups.filter((g) => g.tempId !== groupTempId),
+      exercises: d.exercises.map((e) => (e.groupTempId === groupTempId ? { ...e, groupTempId: null } : e)),
+    }));
   };
 
   const handleSave = async () => {
@@ -137,7 +196,7 @@ export default function ConfirmPage() {
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Confirm your plan</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Parsing free-form docs isn't perfect — click any cell below to fix it before saving.
+          Parsing free-form docs isn't perfect — click any field below to fix it before saving.
         </p>
       </div>
 
@@ -161,145 +220,25 @@ export default function ConfirmPage() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[760px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              <th className="sticky left-0 z-10 w-56 bg-white px-2 py-2 shadow-[1px_0_0_rgba(0,0,0,0.06)]">Exercise</th>
-              <th className="w-14 px-2 py-2">Sets</th>
-              <th className="w-20 px-2 py-2">Reps</th>
-              <th className="w-20 px-2 py-2">Time</th>
-              <th className="w-20 px-2 py-2">Rest</th>
-              <th className="w-24 px-2 py-2">Weight</th>
-              <th className="px-2 py-2">Notes</th>
-              <th className="w-8 px-2 py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {plan.days.map((day) => (
-              <Fragment key={day.tempId}>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <td colSpan={8} className="px-2 py-1.5">
-                    <div className="sticky left-0 flex w-fit items-center gap-2">
-                      <input
-                        aria-label="Day label"
-                        className="min-w-0 flex-1 rounded bg-transparent px-1 py-1 text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none"
-                        value={day.label}
-                        onChange={(e) => updateDay(day.tempId, { label: e.target.value })}
-                      />
-                      <label className="flex items-center gap-1 text-xs text-slate-400 whitespace-nowrap">
-                        Week
-                        <input
-                          type="number"
-                          min={1}
-                          className="w-12 rounded bg-transparent px-1 py-1 text-center text-xs text-slate-700 focus:bg-white focus:outline-none"
-                          value={day.week}
-                          onChange={(e) => updateDay(day.tempId, { week: Number(e.target.value) || 1 })}
-                        />
-                      </label>
-                      <button
-                        onClick={() => addExercise(day.tempId)}
-                        className="whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600"
-                      >
-                        + Row
-                      </button>
-                      <button
-                        aria-label="Remove day"
-                        onClick={() => removeDay(day.tempId)}
-                        className="rounded px-1.5 py-1 text-slate-400"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {day.exercises.map((ex) => (
-                  <tr key={ex.tempId} className="group border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
-                    <td className="sticky left-0 z-10 bg-white px-1 shadow-[1px_0_0_rgba(0,0,0,0.06)] group-hover:bg-slate-50">
-                      <input
-                        placeholder="Exercise name"
-                        className={`${CELL_INPUT} font-medium`}
-                        value={ex.name}
-                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { name: e.target.value })}
-                      />
-                    </td>
-                    <td className="px-1">
-                      <input
-                        placeholder="—"
-                        inputMode="numeric"
-                        className={`${CELL_INPUT} text-center`}
-                        value={ex.targetSets ?? ''}
-                        onChange={(e) =>
-                          updateExercise(day.tempId, ex.tempId, {
-                            targetSets: e.target.value ? Number(e.target.value) : null,
-                          })
-                        }
-                      />
-                    </td>
-                    <td className="px-1">
-                      <input
-                        placeholder="—"
-                        className={`${CELL_INPUT} text-center`}
-                        value={ex.targetReps ?? ''}
-                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { targetReps: e.target.value || null })}
-                      />
-                    </td>
-                    <td className="px-1">
-                      <input
-                        placeholder="—"
-                        className={`${CELL_INPUT} text-center`}
-                        value={ex.targetTime ?? ''}
-                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { targetTime: e.target.value || null })}
-                      />
-                    </td>
-                    <td className="px-1">
-                      <input
-                        placeholder="—"
-                        className={`${CELL_INPUT} text-center`}
-                        value={ex.targetRest ?? ''}
-                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { targetRest: e.target.value || null })}
-                      />
-                    </td>
-                    <td className="px-1">
-                      <input
-                        placeholder="—"
-                        className={`${CELL_INPUT} text-center`}
-                        value={ex.targetWeight ?? ''}
-                        onChange={(e) =>
-                          updateExercise(day.tempId, ex.tempId, { targetWeight: e.target.value || null })
-                        }
-                      />
-                    </td>
-                    <td className="px-1">
-                      <input
-                        placeholder="—"
-                        className={CELL_INPUT}
-                        value={ex.notes ?? ''}
-                        onChange={(e) => updateExercise(day.tempId, ex.tempId, { notes: e.target.value || null })}
-                      />
-                    </td>
-                    <td className="px-1 text-center">
-                      <button
-                        aria-label="Remove exercise"
-                        onClick={() => removeExercise(day.tempId, ex.tempId)}
-                        className="rounded px-1.5 py-1 text-slate-300 hover:text-slate-500"
-                      >
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {day.exercises.length === 0 && (
-                  <tr className="border-b border-slate-100">
-                    <td colSpan={8} className="px-3 py-2 text-xs text-slate-400">
-                      No exercises in this day yet — tap "+ Row" above to add one.
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex flex-col gap-4">
+        {plan.days.map((day) => (
+          <DayBlock
+            key={day.tempId}
+            day={day}
+            onUpdateDay={(patch) => updateDay(day.tempId, patch)}
+            onDeleteDay={() => removeDay(day.tempId)}
+            onDuplicateDay={() => duplicateDay(day.tempId)}
+            onRepeatDay={(weekCount) => repeatDay(day.tempId, weekCount)}
+            onAddExercise={() => addExercise(day.tempId)}
+            onInsertExercise={(afterExTempId) => insertExercise(day.tempId, afterExTempId)}
+            onDuplicateExercise={(exTempId) => duplicateExercise(day.tempId, exTempId)}
+            onUpdateExercise={(exTempId, patch) => updateExercise(day.tempId, exTempId, patch)}
+            onDeleteExercise={(exTempId) => removeExercise(day.tempId, exTempId)}
+            onReorderExercises={(newOrder) => reorderExercises(day.tempId, newOrder)}
+            onGroupExercises={(exTempIds, type) => groupExercises(day.tempId, exTempIds, type)}
+            onUngroup={(groupTempId) => ungroup(day.tempId, groupTempId)}
+          />
+        ))}
       </div>
 
       <button

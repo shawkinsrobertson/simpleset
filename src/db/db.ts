@@ -1,10 +1,11 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Exercise, LoggedSet, Plan, PlanDay, PlanVersion, PendingSync, Session } from './types';
+import type { Exercise, ExerciseGroup, LoggedSet, Plan, PlanDay, PlanVersion, PendingSync, Session } from './types';
 
 export class SimpleSetDB extends Dexie {
   plans!: EntityTable<Plan, 'id'>;
   planDays!: EntityTable<PlanDay, 'id'>;
   exercises!: EntityTable<Exercise, 'id'>;
+  exerciseGroups!: EntityTable<ExerciseGroup, 'id'>;
   sessions!: EntityTable<Session, 'id'>;
   loggedSets!: EntityTable<LoggedSet, 'id'>;
   planVersions!: EntityTable<PlanVersion, 'id'>;
@@ -66,6 +67,23 @@ export class SimpleSetDB extends Dexie {
           s.timeSeconds = s.timeSeconds ?? null;
           s.targetTimeAtLog = s.targetTimeAtLog ?? null;
           s.targetRestAtLog = s.targetRestAtLog ?? null;
+        });
+      });
+
+    this.version(4)
+      .stores({
+        plans: 'id, isActive, importDate',
+        planDays: 'id, planId, archived, [planId+order]',
+        exercises: 'id, planId, dayId, archived, groupId, [dayId+order]',
+        exerciseGroups: 'id, planId, dayId, [dayId+order]',
+        sessions: 'id, planId, dayId, date, status',
+        loggedSets: 'id, sessionId, exerciseId, timestamp',
+        planVersions: 'id, planId, importedAt',
+        pendingSyncs: 'id, planId',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('exercises').toCollection().modify((e) => {
+          e.groupId = e.groupId ?? null;
         });
       });
   }

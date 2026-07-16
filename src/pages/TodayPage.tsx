@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
   completeSession,
+  getExerciseGroupsForDay,
   getExercisesForDay,
   getNextDay,
   getOpenSession,
@@ -12,6 +13,7 @@ import ExerciseLogger from '../components/ExerciseLogger';
 import { db } from '../db/db';
 import { useActivePlan } from '../hooks/useActivePlan';
 import { useLiveValue } from '../hooks/useLiveValue';
+import { groupIntoRuns } from '../lib/groupRuns';
 
 export default function TodayPage() {
   const { loading: planLoading, plan } = useActivePlan();
@@ -39,6 +41,11 @@ export default function TodayPage() {
     () => (openSession ? getExercisesForDay(openSession.dayId, { includeArchived: true }) : Promise.resolve([])),
     [openSession?.dayId],
   );
+  const { value: groups } = useLiveValue(
+    () => (openSession ? getExerciseGroupsForDay(openSession.dayId) : Promise.resolve([])),
+    [openSession?.dayId],
+  );
+  const runs = groupIntoRuns(exercises ?? [], groups ?? []);
 
   if (planLoading) return null;
 
@@ -101,8 +108,20 @@ export default function TodayPage() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {exercises?.map((ex) => (
-          <ExerciseLogger key={ex.id} sessionId={openSession.id} exercise={ex} />
+        {runs.map((run, runIdx) => (
+          <div
+            key={run.group?.id ?? `solo-${runIdx}`}
+            className={run.group ? 'flex flex-col gap-3 rounded-2xl border-l-4 border-brand-300 bg-brand-50/40 p-2' : 'contents'}
+          >
+            {run.group && (
+              <p className="ml-1 text-xs font-semibold uppercase tracking-wide text-brand-700">
+                {run.group.label ?? (run.group.type === 'circuit' ? 'Circuit' : 'Superset')}
+              </p>
+            )}
+            {run.exercises.map((ex) => (
+              <ExerciseLogger key={ex.id} sessionId={openSession.id} exercise={ex} />
+            ))}
+          </div>
         ))}
       </div>
 
