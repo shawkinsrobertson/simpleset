@@ -14,14 +14,43 @@ function formatTime(value, unit) {
   return `${value}${/^min/i.test(unit) ? 'min' : 's'}`;
 }
 
+// ── normalisation helpers (mirrors new logic in textParser.ts) ───────────────
+function stripMarkdown(line) {
+  return line
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/^#+\s*/, '')
+    .replace(/\*+/g, '')
+    .trim();
+}
+
+function normalizeMMSS(line) {
+  // Convert to total seconds (or whole minutes). "1:30" → "90s", "2:00" → "2min".
+  // Two-digit patterns like 30:30 are interval notation — leave unchanged.
+  return line.replace(/\b([0-9])\s*:\s*(\d{2})\b/g, (_, min, sec) => {
+    const totalSecs = parseInt(min, 10) * 60 + parseInt(sec, 10);
+    return totalSecs % 60 === 0 ? `${totalSecs / 60}min` : `${totalSecs}s`;
+  });
+}
+
+function normalizeDashes(line) {
+  return line.replace(/\u2013/g, '-').replace(/\u2014/g, '-');
+}
+
+function normalizeLine(raw) {
+  return normalizeDashes(normalizeMMSS(stripMarkdown(raw)));
+}
+
 // ── textParser (mirrors src/parser/textParser.ts) ───────────────────────────
 const BULLET_RE = /^[\s]*[-*•‣▪·]\s*|^\s*\d+[.)]\s+/;
 const WEEK_RE = /^week\s*(\d+)\b\s*[:\-–]?\s*(.*)$/i;
 const WEEKDAY_RE = /^(mon(day)?|tue(s|sday)?|wed(nesday)?|thu(rs|rsday)?|fri(day)?|sat(urday)?|sun(day)?)\b/i;
 const DAY_RE = /^day\s*(\d+)\b\s*[:\-–]?\s*(.*)$/i;
+const CALENDAR_DATE_RE =
+  /^(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*,?\s*\d{4})?\b/i;
 
 const SET_REP_WEIGHT_RE =
-  /(?<sets>\d+)\s*(?:x|×|sets?\s+of)\s*(?<reps>\d+(?:\s*-\s*\d+)?|amrap|max(?:imum)?)\s*(?:reps?)?(?:\s*(?:(?:x|×|@|at)\s*(?<weightA>\d+(?:\.\d+)?)\s*(?<unitA>lbs?|kgs?|kg|%)?|(?<weightB>\d+(?:\.\d+)?)\s*(?<unitB>lbs?|kgs?|kg|%)))?/i;
+  /(?<sets>\d+)\s*(?:x|×|sets?\s+of)\s*(?<reps>\d+(?:\s*-\s*\d+)?|amrap|max(?:imum)?)\s*(?:reps?)?(?:\s*(?:(?:x|×|@|at)\s*(?<weightA>\d+(?:[.,]\d+)?)\s*(?<unitA>lbs?|kgs?|kg|%)?|(?<weightB>\d+(?:[.,]\d+)?)\s*(?<unitB>lbs?|kgs?|kg|%)))?/i;
 
 const SETS_TIME_RE = new RegExp(
   `(?<sets>\\d+)\\s*(?:x|×|sets?\\s+of)\\s*(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT_FRAGMENT})\\b`,
@@ -37,6 +66,11 @@ const REST_RE = new RegExp(
   `(?:^|[\\s,;])(?:(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT_FRAGMENT})\\s*rest\\b|rest\\s*(?:of|for)?\\s*:?\\s*(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT_FRAGMENT}))`,
   'i',
 );
+
+const REPS_ONLY_RE =
+  /\bx\s*(?<reps>\d+(?:\s*-\s*\d+)?)\s*(?:reps?)?\b(?:\s*\/\s*(?<side>leg|side|arm|hand))?/i;
+
+const COLON_REPS_RE = /:\s*(?<count>\d+(?:\s*-\s*\d+)?)\s*(?<unit>reps?|rounds?|flips?)\s*$/i;
 
 function extractRest(text) {
   if (!text) return { rest: null, remaining: text };
@@ -54,7 +88,7 @@ function extractRest(text) {
 function stripBullet(line) { return line.replace(BULLET_RE, '').trim(); }
 
 function looksLikeTargetLine(line) {
-  return SET_REP_WEIGHT_RE.test(line) || SETS_TIME_RE.test(line) || TIME_ONLY_RE.test(line);
+  return SET_REP_WEIGHT_RE.test(line) || SETS_TIME_RE.test(line) || TIME_ONLY_RE.test(line) || REPS_ONLY_RE.test(line);
 }
 
 function looksLikeHeaderFallback(line) {
@@ -81,7 +115,7 @@ function splitNameAndTrailing(line, matchIndex, matchLength) {
 }
 
 function parseExerciseLine(rawLine) {
-  const line = stripBullet(rawLine);
+  const line = stripBullet(normalizeLine(rawLine));
   if (!line) return null;
 
   const setsTimeMatch = SETS_TIME_RE.exec(line);
@@ -110,6 +144,25 @@ function parseExerciseLine(rawLine) {
     return { name: name || '(unnamed)', targetSets: null, targetReps: null, targetWeight: null, targetTime: formatTime(g.time, g.timeUnit), targetRest: rest, notes: remaining || null, raw: rawLine };
   }
 
+  const repsOnlyMatch = REPS_ONLY_RE.exec(line);
+  if (repsOnlyMatch) {
+    const g = repsOnlyMatch.groups;
+    const { name, trailing } = splitNameAndTrailing(line, repsOnlyMatch.index, repsOnlyMatch[0].length);
+    const { rest, remaining } = extractRest(trailing);
+    const reps = g.reps.replace(/\s*-\s*/, '-');
+    const sideNote = g.side ? `per ${g.side}` : null;
+    const notes = [sideNote, remaining].filter(Boolean).join(', ') || null;
+    return { name: name || '(unnamed)', targetReps: reps, targetSets: null, targetWeight: null, targetTime: null, targetRest: rest, notes, raw: rawLine };
+  }
+
+  const colonRepsMatch = COLON_REPS_RE.exec(line);
+  if (colonRepsMatch) {
+    const name = line.slice(0, colonRepsMatch.index).trim();
+    if (name) {
+      return { name, targetReps: colonRepsMatch.groups.count, targetSets: null, targetWeight: null, targetTime: null, targetRest: null, notes: null, raw: rawLine };
+    }
+  }
+
   return { name: line, targetSets: null, targetReps: null, targetWeight: null, targetTime: null, targetRest: null, notes: null, raw: rawLine };
 }
 
@@ -130,10 +183,11 @@ function parsePlanText(text, fallbackName) {
   };
 
   for (let i = 0; i < lines.length; i++) {
-    const line = stripBullet(lines[i]);
+    const rawLine = lines[i];
+    const line = stripBullet(normalizeLine(rawLine));
     if (!line) continue;
 
-    if (i === 0 && !WEEK_RE.test(line) && !DAY_RE.test(line) && !WEEKDAY_RE.test(line) && !looksLikeTargetLine(line)) {
+    if (i === 0 && !WEEK_RE.test(line) && !DAY_RE.test(line) && !WEEKDAY_RE.test(line) && !CALENDAR_DATE_RE.test(line) && !looksLikeTargetLine(line)) {
       planName = line;
       continue;
     }
@@ -160,6 +214,12 @@ function parsePlanText(text, fallbackName) {
       continue;
     }
 
+    if (CALENDAR_DATE_RE.test(line) && !looksLikeTargetLine(line)) {
+      ensureDay(line, currentWeek);
+      sawAnyHeader = true;
+      continue;
+    }
+
     if (!currentDay && looksLikeHeaderFallback(line)) {
       ensureDay(line, currentWeek);
       sawAnyHeader = true;
@@ -176,7 +236,7 @@ function parsePlanText(text, fallbackName) {
       warnings.push(`No header before "${line}" — grouped under "${currentDay.label}".`);
     }
 
-    const ex = parseExerciseLine(line);
+    const ex = parseExerciseLine(rawLine);
     if (ex) {
       if (ex.targetSets === null && ex.targetReps === null && ex.targetTime === null) {
         warnings.push(`No sets/reps/time for "${ex.name}"`);
@@ -188,7 +248,6 @@ function parsePlanText(text, fallbackName) {
   const nonEmptyDays = days.filter(d => d.exercises.length > 0);
   if (!sawAnyHeader) warnings.unshift('No clear day headers found — review the day breakdown.');
   if (nonEmptyDays.length === 0) warnings.unshift('No exercises could be parsed.');
-
   return { name: planName, days: nonEmptyDays, warnings };
 }
 
@@ -270,8 +329,18 @@ function parseXlsxBuffer(buf, fallbackName) {
   const sheet = workbook.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false, defval: '' });
   if (rows.length === 0) return { name: fallbackName, days: [], warnings: ['Empty spreadsheet.'] };
-  const headerCols = detectColumns(rows[0]);
-  if (headerCols) return parseStructuredSheet(rows.slice(1), headerCols, fallbackName);
+
+  // Scan first 6 rows for a valid header (mirrors xlsx.ts fix for title rows above headers)
+  let headerCols = null;
+  let headerRowIdx = -1;
+  for (let i = 0; i < Math.min(rows.length, 6); i++) {
+    const cols = detectColumns(rows[i]);
+    if (cols) { headerCols = cols; headerRowIdx = i; break; }
+  }
+  if (headerCols && headerRowIdx >= 0) {
+    return parseStructuredSheet(rows.slice(headerRowIdx + 1), headerCols, fallbackName);
+  }
+
   const asText = rows.map(row => row.map(c => String(c ?? '').trim()).filter(Boolean).join(' ')).filter(Boolean).join('\n');
   return parsePlanText(asText, fallbackName);
 }
@@ -285,7 +354,7 @@ async function extractTextFromPdfBuffer(buf) {
   const tmpIn = `/tmp/_pdf_in_${Date.now()}.pdf`;
   await writeFile(tmpIn, buf);
   try {
-    const { stdout } = await execFileAsync('pdftotext', ['-layout', tmpIn, '-']);
+    const { stdout } = await execFileAsync('pdftotext', [tmpIn, '-']);
     return stdout;
   } finally {
     await unlink(tmpIn).catch(() => {});

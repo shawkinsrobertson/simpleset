@@ -92,9 +92,22 @@ export function parseSheetRows(rows: unknown[][], fallbackName: string): ParsedP
     return { name: fallbackName, days: [], warnings: ['The spreadsheet appears to be empty.'] };
   }
 
-  const headerCols = detectColumns(rows[0]);
-  if (headerCols) {
-    const result = parseStructuredSheet(rows.slice(1), headerCols);
+  // Scan the first few rows for a recognisable header rather than assuming
+  // row 0 is always the header. Many real-world spreadsheets have a title
+  // row (or blank rows) above the actual column names.
+  let headerCols: Record<string, number> | null = null;
+  let headerRowIdx = -1;
+  for (let i = 0; i < Math.min(rows.length, 6); i++) {
+    const cols = detectColumns(rows[i]);
+    if (cols) {
+      headerCols = cols;
+      headerRowIdx = i;
+      break;
+    }
+  }
+
+  if (headerCols && headerRowIdx >= 0) {
+    const result = parseStructuredSheet(rows.slice(headerRowIdx + 1), headerCols);
     return { ...result, name: fallbackName };
   }
 
