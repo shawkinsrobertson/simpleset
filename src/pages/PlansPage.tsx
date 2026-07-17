@@ -85,7 +85,7 @@ function PlanCard({ plan }: { plan: Plan }) {
   };
 
   return (
-    <div className={`rounded border p-4 ${plan.isActive ? 'border-accent bg-accent/10' : 'border-border bg-card'}`}>
+    <div className={`card-lift border p-4 ${plan.isActive ? 'border-accent bg-accent/10' : 'border-border bg-card'}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-semibold text-text">{plan.name}</p>
@@ -104,7 +104,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         {!plan.isActive && (
           <button
             onClick={() => setActivePlan(plan.id)}
-            className="flex-1 rounded border border-border py-2 text-sm font-medium text-text"
+            className="btn-secondary flex-1 py-2 text-sm"
           >
             Make active
           </button>
@@ -112,7 +112,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         <button
           disabled={busy}
           onClick={() => inputRef.current?.click()}
-          className="flex-1 rounded border border-border py-2 text-sm font-medium text-text disabled:opacity-50"
+          className="btn-secondary flex-1 py-2 text-sm disabled:opacity-50"
         >
           Re-sync from file
         </button>
@@ -131,7 +131,7 @@ function PlanCard({ plan }: { plan: Plan }) {
           <button
             disabled={busy}
             onClick={handleCheckDrive}
-            className="flex-1 rounded border border-border py-2 text-sm font-medium text-text disabled:opacity-50"
+            className="btn-secondary flex-1 py-2 text-sm disabled:opacity-50"
           >
             Check for updates
           </button>
@@ -168,8 +168,8 @@ export default function PlansPage() {
   return (
     <div className="flex flex-col gap-5 px-5 pt-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-text">Your plans</h1>
-        <Link to="/import" className="rounded bg-accent px-3.5 py-2 text-sm font-semibold text-accent-ink">
+        <h1 className="font-display text-2xl font-semibold text-text">Your plans</h1>
+        <Link to="/import" className="btn-primary px-3.5 py-2 text-sm">
           + Import
         </Link>
       </div>

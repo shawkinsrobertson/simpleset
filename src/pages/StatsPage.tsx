@@ -56,9 +56,8 @@ export default function StatsPage() {
   if (!plan) {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
-        <span className="text-4xl">📈</span>
         <h1 className="text-xl font-semibold text-text">No stats yet</h1>
-        <Link to="/import" className="mt-2 rounded bg-accent px-5 py-3 font-semibold text-accent-ink">
+        <Link to="/import" className="btn-primary mt-2 px-5 py-3">
           Import a plan
         </Link>
       </div>
@@ -107,7 +106,7 @@ export default function StatsPage() {
         )}
       </section>
 
-      <Link to="/stats/detailed" className="rounded border border-border py-3 text-center text-sm font-medium text-text">
+      <Link to="/stats/detailed" className="btn-secondary block py-3 text-sm">
         View detailed stats
       </Link>
     </div>

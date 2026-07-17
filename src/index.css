@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/*
+ * Make Tailwind's built-in `dark:` variant respond to the app's data-mode
+ * attribute (set by applyTheme) rather than the OS media query. This lets
+ * every component use `dark:` utilities without needing a JS theme hook.
+ */
+@variant dark (:root[data-mode='dark'] &);
+
 :root {
   /* accent — warm, fixed for v1 (no cool-accent option shipped) */
   --accent: #c6461d;
@@ -22,6 +29,7 @@
   --text: #2a2a28;
   --text-secondary: #84827c;
   --border: #d8d6d0;
+  --btn-primary-shadow: #4f1c0c; /* darkened accent: visible against light bg */
 }
 
 /* ---- color mode: dark ---- */
@@ -31,6 +39,7 @@
   --text: #edede8;
   --text-secondary: #8c8b86;
   --border: #3a3a36;
+  --btn-primary-shadow: #1a0903; /* near-black: clearly dark against dark bg */
 }
 
 /* ---- contrast: soft (default) ---- */
@@ -42,16 +51,20 @@
 
 /* ---- contrast: high ---- */
 :root[data-contrast='high'][data-mode='light'] {
-  --bg: #f2f2f0;
-  --border: #141414;
+  --bg: #fafaf8;
+  --card: #ffffff;
+  --text-secondary: #6e6e6e;
+  --border: #242422;
 }
 :root[data-contrast='high'][data-mode='dark'] {
-  --bg: #121212;
-  --border: #f2f2f0;
+  --bg: #343432;
+  --card: #242422;
+  --text-secondary: #bcbcbc;
+  --border: #d8d6d0;
 }
 :root[data-contrast='high'] {
   --border-width: 2px;
-  --shadow-offset: 5px;
+  --shadow-offset: 6px;
 }
 
 @theme {
@@ -96,6 +109,54 @@ body {
 }
 .border-b {
   border-bottom-width: var(--border-width);
+}
+
+/*
+ * Button component classes — base style from the design system.
+ * Sizing (py-*, px-*, w-full, text-sm, etc.) is still applied via Tailwind
+ * utilities at the call site so individual buttons can adjust without forks.
+ */
+@layer components {
+  .btn-primary {
+    background-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+    border-radius: 0;
+    /* Shadow: darkened accent (40% accent + 60% black) — visible and on-brand in both themes */
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 0 var(--btn-primary-shadow);
+    transition: opacity 0.1s ease;
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn-primary:hover:not(:disabled) { opacity: 0.92; }
+  .btn-primary:active:not(:disabled) { opacity: 0.82; }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-secondary {
+    background-color: var(--card);
+    color: var(--text);
+    font-weight: 500;
+    border-radius: 0;
+    border: var(--border-width) solid var(--border);
+    /* Shadow uses border color — dark in light theme, lighter in dark theme, creating visible contrast either way */
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 0 var(--border);
+    transition: opacity 0.1s ease;
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn-secondary:hover:not(:disabled) { opacity: 0.8; }
+  .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+/*
+ * Offset accent drop-shadow — the signature SimpleSet card treatment.
+ * Uses --shadow-offset (2px soft / 6px high-contrast) so it automatically
+ * scales with the contrast setting. No blur, solid accent color.
+ */
+@layer utilities {
+  .card-lift {
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 0 var(--accent);
+  }
 }
 
 input[type='number']::-webkit-outer-spin-button,

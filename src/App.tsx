@@ -1,5 +1,7 @@
+import { useState, useCallback } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
+import SplashScreen from './components/SplashScreen';
 import TodayPage from './pages/TodayPage';
 import PlanPage from './pages/PlanPage';
 import StatsPage from './pages/StatsPage';
@@ -18,8 +20,12 @@ const WIDE_ROUTES = ['/confirm', '/sync-review'];
 function App() {
   const location = useLocation();
   const wide = WIDE_ROUTES.includes(location.pathname);
+  const [showSplash, setShowSplash] = useState(true);
+  const onSplashDone = useCallback(() => setShowSplash(false), []);
 
   return (
+    <>
+      {showSplash && <SplashScreen onDone={onSplashDone} />}
     <Layout wide={wide}>
       <Routes>
         <Route path="/" element={<Navigate to="/today" replace />} />
@@ -38,6 +44,7 @@ function App() {
         <Route path="*" element={<Navigate to="/today" replace />} />
       </Routes>
     </Layout>
+    </>
   );
 }
 

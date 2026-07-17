@@ -7,6 +7,9 @@ import { useLongPress } from '../../hooks/useLongPress';
 const FIELD_INPUT =
   'w-full rounded border border-border bg-card px-2 py-2 text-sm focus:border-accent focus:outline-none sm:rounded sm:border-0 sm:bg-transparent sm:px-2 sm:py-2 sm:focus:bg-accent/10';
 
+/** Number/data fields use JetBrains Mono per the type scale. */
+const NUM_FIELD = `${FIELD_INPUT} font-mono text-center`;
+
 interface ExerciseRowProps {
   exercise: ParsedExercise;
   selectionMode: boolean;
@@ -98,7 +101,7 @@ export default function ExerciseRow({
             <input
               placeholder="—"
               inputMode="numeric"
-              className={`${FIELD_INPUT} text-center`}
+              className={NUM_FIELD}
               value={exercise.targetSets ?? ''}
               onChange={(e) => onUpdate({ targetSets: e.target.value ? Number(e.target.value) : null })}
               disabled={selectionMode}
@@ -108,7 +111,7 @@ export default function ExerciseRow({
             <label className="block text-[10px] font-medium uppercase text-text-secondary">Reps/Time</label>
             <input
               placeholder="—"
-              className={`${FIELD_INPUT} text-center`}
+              className={NUM_FIELD}
               value={repsOrTimeDisplay(exercise.targetReps, exercise.targetTime)}
               onChange={(e) => handleRepsOrTimeChange(e.target.value)}
               disabled={selectionMode}
@@ -118,7 +121,7 @@ export default function ExerciseRow({
             <label className="block text-[10px] font-medium uppercase text-text-secondary">Rest</label>
             <input
               placeholder="—"
-              className={`${FIELD_INPUT} text-center`}
+              className={NUM_FIELD}
               value={exercise.targetRest ?? ''}
               onChange={(e) => onUpdate({ targetRest: e.target.value || null })}
               disabled={selectionMode}
@@ -128,7 +131,7 @@ export default function ExerciseRow({
             <label className="block text-[10px] font-medium uppercase text-text-secondary">Weight</label>
             <input
               placeholder="—"
-              className={`${FIELD_INPUT} text-center`}
+              className={NUM_FIELD}
               value={exercise.targetWeight ?? ''}
               onChange={(e) => onUpdate({ targetWeight: e.target.value || null })}
               disabled={selectionMode}
@@ -180,7 +183,7 @@ export default function ExerciseRow({
           <input
             placeholder="—"
             inputMode="numeric"
-            className={`${FIELD_INPUT} text-center`}
+            className={NUM_FIELD}
             value={exercise.targetSets ?? ''}
             onChange={(e) => onUpdate({ targetSets: e.target.value ? Number(e.target.value) : null })}
             disabled={selectionMode}
@@ -189,7 +192,7 @@ export default function ExerciseRow({
         <div className="w-24 shrink-0">
           <input
             placeholder="—"
-            className={`${FIELD_INPUT} text-center`}
+            className={NUM_FIELD}
             value={repsOrTimeDisplay(exercise.targetReps, exercise.targetTime)}
             onChange={(e) => handleRepsOrTimeChange(e.target.value)}
             disabled={selectionMode}
@@ -198,7 +201,7 @@ export default function ExerciseRow({
         <div className="w-20 shrink-0">
           <input
             placeholder="—"
-            className={`${FIELD_INPUT} text-center`}
+            className={NUM_FIELD}
             value={exercise.targetRest ?? ''}
             onChange={(e) => onUpdate({ targetRest: e.target.value || null })}
             disabled={selectionMode}
@@ -207,7 +210,7 @@ export default function ExerciseRow({
         <div className="w-24 shrink-0">
           <input
             placeholder="—"
-            className={`${FIELD_INPUT} text-center`}
+            className={NUM_FIELD}
             value={exercise.targetWeight ?? ''}
             onChange={(e) => onUpdate({ targetWeight: e.target.value || null })}
             disabled={selectionMode}

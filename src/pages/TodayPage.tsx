@@ -84,10 +84,9 @@ export default function TodayPage() {
   if (!plan) {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
-        <span className="text-4xl">🗒️</span>
-        <h1 className="text-xl font-semibold text-text">No plan yet</h1>
+        <h1 className="font-display text-xl font-semibold text-text">No plan yet</h1>
         <p className="text-sm text-text-secondary">Import a workout plan to start tracking your training.</p>
-        <Link to="/import" className="mt-2 rounded bg-accent px-5 py-3 font-semibold text-accent-ink">
+        <Link to="/import" className="btn-primary mt-2 px-5 py-3">
           Import a plan
         </Link>
       </div>
@@ -97,8 +96,7 @@ export default function TodayPage() {
   if (planDays && planDays.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
-        <span className="text-4xl">🤔</span>
-        <h1 className="text-xl font-semibold text-text">This plan has no days yet</h1>
+        <h1 className="font-display text-xl font-semibold text-text">This plan has no days yet</h1>
         <p className="text-sm text-text-secondary">Head to Plans to re-import or edit "{plan.name}".</p>
       </div>
     );
@@ -119,7 +117,7 @@ export default function TodayPage() {
         {Wordmark}
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">{plan.name}</p>
-          <h2 className="text-xl font-semibold text-text">Ready for your next session?</h2>
+          <h2 className="font-display text-xl font-semibold text-text">Ready for your next session?</h2>
         </div>
         {nextDay ? (
           <Card className="p-5">
@@ -128,7 +126,7 @@ export default function TodayPage() {
             {nextDay.week > 1 && <p className="text-sm text-text-secondary">Week {nextDay.week}</p>}
             <button
               onClick={() => startSession(plan.id, nextDay.id)}
-              className="mt-4 w-full rounded bg-accent py-3.5 font-semibold text-accent-ink"
+              className="btn-primary mt-4 w-full py-3.5"
             >
               Start workout
             </button>
@@ -191,7 +189,7 @@ export default function TodayPage() {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <h3 className={`font-semibold text-text ${state === 'done' ? 'line-through' : ''}`}>{ex.name}</h3>
-                      <p className="text-xs text-text-secondary">
+                      <p className="font-mono text-xs text-text-secondary">
                         Target: {ex.targetSets ?? '—'} × {ex.targetReps ?? ex.targetTime ?? '—'}
                         {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
                         {ex.targetRest ? ` · rest ${ex.targetRest}` : ''}
@@ -211,13 +209,13 @@ export default function TodayPage() {
       <div className="sticky bottom-20 flex gap-2 rounded border border-border bg-card/95 p-3 backdrop-blur">
         <button
           onClick={() => skipSession(openSession.id)}
-          className="flex-1 rounded border border-border py-3 font-medium text-text-secondary"
+          className="btn-secondary flex-1 py-3"
         >
           Skip
         </button>
         <button
           onClick={() => completeSession(openSession.id)}
-          className="flex-[2] rounded bg-accent py-3 font-semibold text-accent-ink"
+          className="btn-primary flex-[2] py-3"
         >
           Finish workout
         </button>

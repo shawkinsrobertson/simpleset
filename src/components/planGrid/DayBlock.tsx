@@ -135,7 +135,7 @@ export default function DayBlock({
   );
 
   return (
-    <div className="rounded border border-border bg-card p-2.5 sm:p-2">
+    <div className="card-lift rounded border border-border bg-card p-2.5 sm:p-2">
       <div className="rounded bg-bg px-2 py-1.5">
         <div className="flex items-center gap-2">
           <input
@@ -157,21 +157,22 @@ export default function DayBlock({
           <button
             aria-label="Delete day"
             onClick={onDeleteDay}
-            className="shrink-0 rounded px-1.5 py-1 text-text-secondary"
+            className="shrink-0 rounded px-1.5 py-1 opacity-50 hover:opacity-100"
           >
-            ✕
+            <img src="/icons/icon-delete-light.png" alt="Delete" className="h-5 w-5 dark:hidden" draggable={false} />
+            <img src="/icons/icon-delete-dark.png" alt="Delete" className="hidden h-5 w-5 dark:block" draggable={false} />
           </button>
         </div>
         <div className="mt-1 flex gap-1.5">
           <button
             onClick={onDuplicateDay}
-            className="rounded border border-border bg-card px-2 py-1 text-xs font-medium text-text-secondary"
+            className="btn-secondary px-2 py-1 text-xs"
           >
             Duplicate
           </button>
           <button
             onClick={() => setRepeatPromptOpen(true)}
-            className="rounded border border-border bg-card px-2 py-1 text-xs font-medium text-text-secondary"
+            className="btn-secondary px-2 py-1 text-xs"
           >
             Repeat…
           </button>
@@ -258,7 +259,7 @@ export default function DayBlock({
                   selectedGroupIds.forEach((gid) => onUngroup(gid));
                   cancelSelection();
                 }}
-                className="rounded border border-border px-2.5 py-1.5 text-xs font-medium text-text-secondary"
+                className="btn-secondary px-2.5 py-1.5 text-xs"
               >
                 Ungroup
               </button>
@@ -279,7 +280,7 @@ export default function DayBlock({
                 onGroupExercises([...selected], 'superset');
                 cancelSelection();
               }}
-              className="rounded bg-accent px-2.5 py-1.5 text-xs font-medium text-accent-ink disabled:opacity-40"
+              className="btn-primary px-2.5 py-1.5 text-xs disabled:opacity-40"
             >
               Superset
             </button>
@@ -313,7 +314,7 @@ export default function DayBlock({
               onRepeatDay(repeatWeeks);
               setRepeatPromptOpen(false);
             }}
-            className="mt-4 w-full rounded bg-accent py-3 text-center font-semibold text-accent-ink"
+            className="btn-primary mt-4 w-full py-3"
           >
             Add {repeatWeeks} week{repeatWeeks === 1 ? '' : 's'}
           </button>

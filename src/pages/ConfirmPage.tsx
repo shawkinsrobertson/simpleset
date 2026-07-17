@@ -53,7 +53,7 @@ export default function ConfirmPage() {
       <div className="px-5 pt-10 text-center text-text-secondary">
         <p>Nothing to confirm yet.</p>
         <button
-          className="mt-4 rounded bg-accent px-4 py-2 text-accent-ink"
+          className="btn-primary mt-4 px-4 py-2"
           onClick={() => navigate('/import')}
         >
           Import a plan
@@ -244,7 +244,7 @@ export default function ConfirmPage() {
   return (
     <div className="flex flex-col gap-5 px-5 pt-8">
       <div>
-        <h1 className="text-2xl font-semibold text-text">Confirm your plan</h1>
+        <h1 className="font-display text-2xl font-semibold text-text">Confirm your plan</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Parsing free-form docs isn't perfect — click any field below to fix it before saving.
         </p>
@@ -260,7 +260,7 @@ export default function ConfirmPage() {
       </div>
 
       {plan.warnings.length > 0 && (
-        <div className="rounded bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500 dark:bg-amber-900/20 dark:text-amber-200">
           <p className="font-medium">Heads up:</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-4">
             {plan.warnings.map((w, i) => (
@@ -307,7 +307,7 @@ export default function ConfirmPage() {
         <button
           disabled={saving || totalExercises === 0}
           onClick={handleSave}
-          className="rounded bg-accent py-3.5 text-center font-semibold text-accent-ink disabled:opacity-50"
+          className="btn-primary w-full py-3.5"
         >
           {saving ? 'Saving…' : 'Save plan'}
         </button>

@@ -65,7 +65,7 @@ export default function ImportPage() {
   return (
     <div className="flex flex-col gap-6 px-5 pt-10">
       <div>
-        <h1 className="text-2xl font-semibold text-text">Import your plan</h1>
+        <h1 className="font-display text-2xl font-semibold text-text">Import your plan</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Bring an existing workout plan in from a file or Google Drive. We'll parse it and let you
           confirm the details before saving.
@@ -121,7 +121,7 @@ export default function ImportPage() {
 
       <button
         onClick={() => navigate('/import/drive')}
-        className="flex items-center justify-center gap-2 rounded border border-border bg-card px-6 py-4 font-medium text-text"
+        className="btn-secondary flex items-center justify-center gap-2 w-full px-6 py-4"
       >
         <span className="text-lg">🔗</span> Connect Google Drive
       </button>

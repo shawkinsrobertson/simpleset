@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
-import clsx from 'clsx';
 
 const TABS = [
-  { to: '/today', label: 'Today', icon: '🏋️' },
-  { to: '/plan', label: 'Plan', icon: '📋' },
-  { to: '/stats', label: 'Stats', icon: '📈' },
-  { to: '/plans', label: 'Plans', icon: '🗂️' },
-  { to: '/settings', label: 'Settings', icon: '⚙️' },
+  { to: '/today', slug: 'today' },
+  { to: '/plan', slug: 'plan' },
+  { to: '/stats', slug: 'stats' },
+  { to: '/plans', slug: 'library' },
+  { to: '/settings', slug: 'settings' },
 ];
 
 export default function Layout({ children, wide }: { children: ReactNode; wide?: boolean }) {
@@ -20,15 +19,29 @@ export default function Layout({ children, wide }: { children: ReactNode; wide?:
           <NavLink
             key={tab.to}
             to={tab.to}
-            className={({ isActive }) =>
-              clsx(
-                'flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium',
-                isActive ? 'text-accent' : 'text-text-secondary',
-              )
-            }
+            className="flex flex-1 items-center justify-center py-1"
           >
-            <span className="text-xl leading-none">{tab.icon}</span>
-            {tab.label}
+            {({ isActive }) => {
+              const state = isActive ? 'active' : 'inactive';
+              return (
+                <>
+                  {/* Light mode icon */}
+                  <img
+                    src={`/icons/nav-${tab.slug}-${state}-light.png`}
+                    alt={tab.slug}
+                    className="h-14 w-auto dark:hidden"
+                    draggable={false}
+                  />
+                  {/* Dark mode icon */}
+                  <img
+                    src={`/icons/nav-${tab.slug}-${state}-dark.png`}
+                    alt={tab.slug}
+                    className="hidden h-14 w-auto dark:block"
+                    draggable={false}
+                  />
+                </>
+              );
+            }}
           </NavLink>
         ))}
       </nav>

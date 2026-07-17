@@ -32,7 +32,7 @@ export default function SectionPickerPage() {
       <div className="px-5 pt-10 text-center text-text-secondary">
         <p>Nothing to pick from yet.</p>
         <button
-          className="mt-4 rounded bg-accent px-4 py-2 text-accent-ink"
+          className="btn-primary mt-4 px-4 py-2"
           onClick={() => navigate('/import')}
         >
           Import a plan
@@ -74,7 +74,7 @@ export default function SectionPickerPage() {
     <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 56px)' }}>
       {/* Header */}
       <div className="px-5 pt-8 pb-4">
-        <h1 className="text-2xl font-semibold text-text">Select sections</h1>
+        <h1 className="font-display text-2xl font-semibold text-text">Select sections</h1>
         <p className="mt-1 text-sm text-text-secondary">
           We found {sections.length} section{sections.length === 1 ? '' : 's'}.
           Intro and nutrition pages are unchecked — tap to include anything you want.
@@ -161,7 +161,7 @@ export default function SectionPickerPage() {
         <button
           disabled={selectedCount === 0}
           onClick={() => handleParse(false)}
-          className="w-full rounded bg-accent py-3.5 text-center font-semibold text-accent-ink disabled:opacity-40"
+          className="btn-primary w-full py-3.5"
         >
           {selectedCount === 0
             ? 'Select at least one section'
