@@ -42,16 +42,20 @@
 
 /* ---- contrast: high ---- */
 :root[data-contrast='high'][data-mode='light'] {
-  --bg: #f2f2f0;
-  --border: #141414;
+  --bg: #fafaf8;
+  --card: #ffffff;
+  --text-secondary: #6e6e6e;
+  --border: #242422;
 }
 :root[data-contrast='high'][data-mode='dark'] {
-  --bg: #121212;
-  --border: #f2f2f0;
+  --bg: #343432;
+  --card: #242422;
+  --text-secondary: #bcbcbc;
+  --border: #d8d6d0;
 }
 :root[data-contrast='high'] {
   --border-width: 2px;
-  --shadow-offset: 5px;
+  --shadow-offset: 6px;
 }
 
 @theme {
@@ -96,6 +100,17 @@ body {
 }
 .border-b {
   border-bottom-width: var(--border-width);
+}
+
+/*
+ * Offset accent drop-shadow — the signature SimpleSet card treatment.
+ * Uses --shadow-offset (2px soft / 6px high-contrast) so it automatically
+ * scales with the contrast setting. No blur, solid accent color.
+ */
+@layer utilities {
+  .card-lift {
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 0 var(--accent);
+  }
 }
 
 input[type='number']::-webkit-outer-spin-button,

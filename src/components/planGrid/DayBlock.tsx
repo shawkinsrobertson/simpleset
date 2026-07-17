@@ -135,7 +135,7 @@ export default function DayBlock({
   );
 
   return (
-    <div className="rounded border border-border bg-card p-2.5 sm:p-2">
+    <div className="card-lift rounded border border-border bg-card p-2.5 sm:p-2">
       <div className="rounded bg-bg px-2 py-1.5">
         <div className="flex items-center gap-2">
           <input

@@ -85,7 +85,7 @@ function PlanCard({ plan }: { plan: Plan }) {
   };
 
   return (
-    <div className={`rounded border p-4 ${plan.isActive ? 'border-accent bg-accent/10' : 'border-border bg-card'}`}>
+    <div className={`card-lift rounded border p-4 ${plan.isActive ? 'border-accent bg-accent/10' : 'border-border bg-card'}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-semibold text-text">{plan.name}</p>
