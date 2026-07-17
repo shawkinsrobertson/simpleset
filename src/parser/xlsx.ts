@@ -78,13 +78,20 @@ function parseStructuredSheet(rows: unknown[][], cols: Record<string, number>): 
       groupTempId: null,
       raw: row.map((c) => String(c ?? '')).join(' | '),
     };
-    if (exercise.targetSets === null && exercise.targetReps === null && exercise.targetTime === null) {
-      warnings.push(`Couldn't find sets/reps/time for "${exercise.name}" — check it on the next screen.`);
-    }
     currentDay.exercises.push(exercise);
   }
 
-  return { name: '', days: days.filter((d) => d.exercises.length > 0), warnings };
+  const filteredDays = days.filter((d) => d.exercises.length > 0);
+  const noTargetCount = filteredDays
+    .flatMap((d) => d.exercises)
+    .filter((e) => e.targetSets === null && e.targetReps === null && e.targetTime === null).length;
+  if (noTargetCount > 0) {
+    warnings.push(
+      `${noTargetCount} exercise${noTargetCount === 1 ? '' : 's'} couldn't be matched to sets/reps/time — they're included below so you can fill them in.`,
+    );
+  }
+
+  return { name: '', days: filteredDays, warnings };
 }
 
 export function parseSheetRows(rows: unknown[][], fallbackName: string): ParsedPlan {

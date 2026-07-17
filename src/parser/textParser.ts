@@ -423,14 +423,22 @@ export function parsePlanText(text: string, fallbackName: string): ParsedPlan {
 
     const exercise = parseExerciseLine(rawLine);
     if (exercise) {
-      if (exercise.targetSets === null && exercise.targetReps === null && exercise.targetTime === null) {
-        warnings.push(`Couldn't find sets/reps/time for "${exercise.name}" — check it on the next screen.`);
-      }
       currentDay!.exercises.push(exercise);
     }
   }
 
   const nonEmptyDays = days.filter((d) => d.exercises.length > 0);
+
+  // Summarise exercises that have no targets in a single warning instead of
+  // one noisy line per exercise.
+  const noTargetCount = nonEmptyDays
+    .flatMap((d) => d.exercises)
+    .filter((e) => e.targetSets === null && e.targetReps === null && e.targetTime === null).length;
+  if (noTargetCount > 0) {
+    warnings.push(
+      `${noTargetCount} exercise${noTargetCount === 1 ? '' : 's'} couldn't be matched to sets/reps/time — they're included below so you can fill them in.`,
+    );
+  }
 
   if (!sawAnyHeader) {
     warnings.unshift(
