@@ -68,17 +68,19 @@ export default function DriveImportPage() {
     setLoading(true);
     try {
       const { text, kind } = await exportDriveFile(token, file);
-      const parsed = kind === 'sheet' ? parseCsv(text, file.name) : parseText(text, file.name);
-      navigate('/confirm', {
-        state: {
-          parsedPlan: parsed,
-          sourceType: 'drive',
-          sourceFileName: file.name,
-          sourceFileId: file.id,
-          sourceMimeType: file.mimeType,
-          sourceModifiedTime: file.modifiedTime,
-        },
-      });
+      const fallbackName = file.name;
+      const sourceState = {
+        sourceType: 'drive' as const,
+        sourceFileName: file.name,
+        sourceFileId: file.id,
+        sourceMimeType: file.mimeType,
+        sourceModifiedTime: file.modifiedTime,
+      };
+
+      // Drive exports (both Docs and Sheets) come as clean plain text — no
+      // embedded chapters or TOC pages — so we skip the section picker.
+      const parsed = kind === 'sheet' ? parseCsv(text, fallbackName) : parseText(text, fallbackName);
+      navigate('/confirm', { state: { parsedPlan: parsed, ...sourceState } });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not import that file.');
     } finally {

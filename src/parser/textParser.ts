@@ -150,12 +150,34 @@ function normalizeDashes(line: string): string {
 }
 
 /** Applies all pre-processing normalisations to a raw line before parsing. */
-function normalizeLine(raw: string): string {
+export function normalizeLine(raw: string): string {
   return normalizeDashes(normalizeMMSS(stripMarkdown(stripInvisibleChars(raw))));
 }
 
+/**
+ * Exported for use by the section scanner.
+ * True when the normalised line reads like a day/week/section header —
+ * i.e. it would cause the text parser to open a new day bucket.
+ */
+export function looksLikeHeadingLine(line: string): boolean {
+  if (!line || looksLikeTargetLine(line)) return false;
+  return (
+    WEEK_RE.test(line) ||
+    DAY_RE.test(line) ||
+    WEEKDAY_RE.test(line) ||
+    CALENDAR_DATE_RE.test(line) ||
+    looksLikeHeaderFallback(line) ||
+    looksLikeSectionHeader(line)
+  );
+}
+
+/** Exported for use by the section scanner. */
+export function stripBulletExport(line: string): string {
+  return stripBullet(line);
+}
+
 /** True if the line carries any recognizable target (reps, weight, or a duration). */
-function looksLikeTargetLine(line: string): boolean {
+export function looksLikeTargetLine(line: string): boolean {
   return SET_REP_WEIGHT_RE.test(line) || SETS_TIME_RE.test(line) || TIME_ONLY_RE.test(line) || REPS_ONLY_RE.test(line);
 }
 

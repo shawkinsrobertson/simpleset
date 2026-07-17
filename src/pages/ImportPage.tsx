@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { parseFile } from '../parser';
+import { parseFile, detectFileKind, extractTextFromPdf, extractTextFromDocx, parsePlanText, scanSections, needsSectionPicker } from '../parser';
 
 export default function ImportPage() {
   const navigate = useNavigate();
@@ -13,15 +13,48 @@ export default function ImportPage() {
     setError(null);
     setLoading(true);
     try {
-      const parsed = await parseFile(file);
-      navigate('/confirm', {
-        state: {
-          parsedPlan: parsed,
-          sourceType: 'local',
-          sourceFileName: file.name,
-          sourceModifiedTime: String(file.lastModified),
-        },
-      });
+      const kind = detectFileKind(file);
+      if (!kind) throw new Error(`Unsupported file type: "${file.name}". SimpleSet supports .docx, .xlsx, .pdf, and .txt files.`);
+
+      const sourceState = {
+        sourceType: 'local' as const,
+        sourceFileName: file.name,
+        sourceModifiedTime: String(file.lastModified),
+      };
+
+      // XLSX and plain text are already structured — skip the section picker.
+      if (kind === 'xlsx' || kind === 'text') {
+        const parsed = await parseFile(file);
+        navigate('/confirm', { state: { parsedPlan: parsed, ...sourceState } });
+        return;
+      }
+
+      // Extract text, then decide whether to show the section picker.
+      const text = kind === 'pdf'
+        ? await extractTextFromPdf(file)
+        : await extractTextFromDocx(file);
+
+      const fallbackName = file.name.replace(/\.[^.]+$/, '');
+
+      // The section picker is only reliable for PDFs. DOCX/text formats use
+      // circuit/tri-set structures where per-section exercise counts are
+      // misleading, causing the picker to incorrectly mark real workout days
+      // as unselected.
+      if (kind === 'pdf') {
+        const sections = scanSections(text);
+        if (needsSectionPicker(sections)) {
+          navigate('/import/sections', {
+            state: { sections, extractedText: text, fallbackName, ...sourceState },
+          });
+          return;
+        }
+      }
+
+      const parsed = parsePlanText(text, fallbackName);
+      if (kind === 'pdf' && !text.trim()) {
+        parsed.warnings.unshift('No text could be extracted from this PDF. Scanned/image-only PDFs are not supported — try exporting as a Word doc or spreadsheet instead.');
+      }
+      navigate('/confirm', { state: { parsedPlan: parsed, ...sourceState } });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong parsing that file.');
     } finally {
