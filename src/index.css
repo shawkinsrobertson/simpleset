@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/*
+ * Make Tailwind's built-in `dark:` variant respond to the app's data-mode
+ * attribute (set by applyTheme) rather than the OS media query. This lets
+ * every component use `dark:` utilities without needing a JS theme hook.
+ */
+@variant dark (:root[data-mode='dark'] &);
+
 :root {
   /* accent — warm, fixed for v1 (no cool-accent option shipped) */
   --accent: #c6461d;

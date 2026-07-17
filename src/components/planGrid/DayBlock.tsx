@@ -157,9 +157,10 @@ export default function DayBlock({
           <button
             aria-label="Delete day"
             onClick={onDeleteDay}
-            className="shrink-0 rounded px-1.5 py-1 text-text-secondary"
+            className="shrink-0 rounded px-1.5 py-1 opacity-50 hover:opacity-100"
           >
-            ✕
+            <img src="/icons/icon-delete-light.png" alt="Delete" className="h-5 w-5 dark:hidden" draggable={false} />
+            <img src="/icons/icon-delete-dark.png" alt="Delete" className="hidden h-5 w-5 dark:block" draggable={false} />
           </button>
         </div>
         <div className="mt-1 flex gap-1.5">
