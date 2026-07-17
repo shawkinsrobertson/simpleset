@@ -63,6 +63,7 @@ export async function createPlanFromParsed(parsed: ParsedPlan, source: CreatePla
         targetRest: e.targetRest,
         notes: e.notes,
         groupId: e.groupTempId ? (groupIdByTempId.get(e.groupTempId) ?? null) : null,
+        category: 'strength',
         archived: false,
       });
       diffSummary.push({ kind: 'new', dayLabel: d.label, exerciseName: e.name });
@@ -222,6 +223,11 @@ export async function getExercisesForPlan(planId: string, opts: { includeArchive
 
 export async function getExerciseGroupsForPlan(planId: string): Promise<ExerciseGroup[]> {
   return db.exerciseGroups.where('planId').equals(planId).toArray();
+}
+
+/** Flips an exercise's strength/conditioning category, which decides personal-record direction for timed exercises. */
+export async function updateExerciseCategory(exerciseId: string, category: 'strength' | 'conditioning'): Promise<void> {
+  await db.exercises.update(exerciseId, { category });
 }
 
 /**

@@ -114,21 +114,21 @@ export default function DayBlock({
   );
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-2.5 sm:p-2">
-      <div className="rounded-xl bg-slate-50 px-2 py-1.5">
+    <div className="rounded border border-border bg-card p-2.5 sm:p-2">
+      <div className="rounded bg-bg px-2 py-1.5">
         <div className="flex items-center gap-2">
           <input
             aria-label="Day label"
-            className="min-w-0 flex-1 rounded bg-transparent px-1 py-1 text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none"
+            className="min-w-0 flex-1 rounded bg-transparent px-1 py-1 text-sm font-semibold text-text focus:bg-card focus:outline-none"
             value={day.label}
             onChange={(e) => onUpdateDay({ label: e.target.value })}
           />
-          <label className="flex shrink-0 items-center gap-1 text-xs text-slate-400 whitespace-nowrap">
+          <label className="flex shrink-0 items-center gap-1 text-xs text-text-secondary whitespace-nowrap">
             Wk
             <input
               type="number"
               min={1}
-              className="w-10 rounded bg-transparent px-1 py-1 text-center text-xs text-slate-700 focus:bg-white focus:outline-none"
+              className="w-10 rounded bg-transparent px-1 py-1 text-center text-xs text-text focus:bg-card focus:outline-none"
               value={day.week}
               onChange={(e) => onUpdateDay({ week: Number(e.target.value) || 1 })}
             />
@@ -136,7 +136,7 @@ export default function DayBlock({
           <button
             aria-label="Delete day"
             onClick={onDeleteDay}
-            className="shrink-0 rounded px-1.5 py-1 text-slate-400"
+            className="shrink-0 rounded px-1.5 py-1 text-text-secondary"
           >
             ✕
           </button>
@@ -144,13 +144,13 @@ export default function DayBlock({
         <div className="mt-1 flex gap-1.5">
           <button
             onClick={onDuplicateDay}
-            className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600"
+            className="rounded border border-border bg-card px-2 py-1 text-xs font-medium text-text-secondary"
           >
             Duplicate
           </button>
           <button
             onClick={() => setRepeatPromptOpen(true)}
-            className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600"
+            className="rounded border border-border bg-card px-2 py-1 text-xs font-medium text-text-secondary"
           >
             Repeat…
           </button>
@@ -158,7 +158,7 @@ export default function DayBlock({
       </div>
 
       {day.exercises.length > 0 && (
-        <div className="hidden items-center gap-1 px-2 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 sm:flex">
+        <div className="hidden items-center gap-1 px-2 pt-2 text-[11px] font-semibold uppercase tracking-wide text-text-secondary sm:flex">
           <div className="w-5 shrink-0" />
           <div className="w-56 shrink-0">Exercise</div>
           <div className="w-14 shrink-0 text-center">Sets</div>
@@ -176,12 +176,12 @@ export default function DayBlock({
             {runs.map((run, runIdx) => (
               <div
                 key={run.group?.tempId ?? `solo-${runIdx}`}
-                className={run.group ? 'rounded-xl border-l-4 border-brand-300 bg-brand-50/40 py-1.5 pl-1.5 pr-1' : ''}
+                className={run.group ? 'rounded border-l-4 border-accent bg-accent/10 py-1.5 pl-1.5 pr-1' : ''}
               >
                 {run.group && (
                   <button
                     onClick={() => onUngroup(run.group!.tempId)}
-                    className="mb-1 ml-1 rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-700"
+                    className="mb-1 ml-1 rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent"
                     title="Tap to ungroup"
                   >
                     {run.group.label ?? (run.group.type === 'circuit' ? 'Circuit' : 'Superset')} · Ungroup ✕
@@ -204,7 +204,7 @@ export default function DayBlock({
               </div>
             ))}
             {day.exercises.length === 0 && (
-              <p className="px-2 py-1.5 text-xs text-slate-400">No exercises in this day yet.</p>
+              <p className="px-2 py-1.5 text-xs text-text-secondary">No exercises in this day yet.</p>
             )}
           </div>
         </SortableContext>
@@ -213,14 +213,14 @@ export default function DayBlock({
       <div className="mt-2 flex gap-2">
         <button
           onClick={onAddExercise}
-          className="flex-1 rounded-lg border border-dashed border-slate-300 py-1.5 text-xs font-medium text-slate-500"
+          className="flex-1 rounded border border-dashed border-border py-1.5 text-xs font-medium text-text-secondary"
         >
           + Row
         </button>
         {!selectionMode && day.exercises.length > 1 && (
           <button
             onClick={() => setSelectionMode(true)}
-            className="flex-1 rounded-lg border border-dashed border-slate-300 py-1.5 text-xs font-medium text-slate-500"
+            className="flex-1 rounded border border-dashed border-border py-1.5 text-xs font-medium text-text-secondary"
           >
             Select multiple…
           </button>
@@ -228,8 +228,8 @@ export default function DayBlock({
       </div>
 
       {selectionMode && (
-        <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-md items-center gap-2 border-t border-slate-200 bg-white p-3 shadow-lg">
-          <span className="text-xs font-medium text-slate-500">{selected.size} selected</span>
+        <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-md items-center gap-2 border-t border-border bg-card p-3">
+          <span className="text-xs font-medium text-text-secondary">{selected.size} selected</span>
           <div className="ml-auto flex gap-2">
             {selectedGroupIds.size > 0 && (
               <button
@@ -237,7 +237,7 @@ export default function DayBlock({
                   selectedGroupIds.forEach((gid) => onUngroup(gid));
                   cancelSelection();
                 }}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600"
+                className="rounded border border-border px-2.5 py-1.5 text-xs font-medium text-text-secondary"
               >
                 Ungroup
               </button>
@@ -248,7 +248,7 @@ export default function DayBlock({
                 onGroupExercises([...selected], 'circuit');
                 cancelSelection();
               }}
-              className="rounded-lg bg-slate-700 px-2.5 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+              className="rounded bg-text px-2.5 py-1.5 text-xs font-medium text-bg disabled:opacity-40"
             >
               Circuit
             </button>
@@ -258,11 +258,11 @@ export default function DayBlock({
                 onGroupExercises([...selected], 'superset');
                 cancelSelection();
               }}
-              className="rounded-lg bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+              className="rounded bg-accent px-2.5 py-1.5 text-xs font-medium text-accent-ink disabled:opacity-40"
             >
               Superset
             </button>
-            <button onClick={cancelSelection} className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400">
+            <button onClick={cancelSelection} className="rounded px-2.5 py-1.5 text-xs font-medium text-text-secondary">
               Cancel
             </button>
           </div>
@@ -273,10 +273,10 @@ export default function DayBlock({
 
       {repeatPromptOpen && (
         <Modal title={`Repeat "${day.label}"`} onClose={() => setRepeatPromptOpen(false)}>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-text-secondary">
             Create copies of this day for the next N weeks, keeping the same exercises.
           </p>
-          <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+          <label className="mt-3 flex items-center gap-2 text-sm text-text">
             Number of additional weeks
             <input
               type="number"
@@ -284,7 +284,7 @@ export default function DayBlock({
               max={52}
               value={repeatWeeks}
               onChange={(e) => setRepeatWeeks(Math.max(1, Number(e.target.value) || 1))}
-              className="w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-center"
+              className="w-16 rounded border border-border px-2 py-1.5 text-center"
             />
           </label>
           <button
@@ -292,7 +292,7 @@ export default function DayBlock({
               onRepeatDay(repeatWeeks);
               setRepeatPromptOpen(false);
             }}
-            className="mt-4 w-full rounded-xl bg-brand-600 py-3 text-center font-semibold text-white"
+            className="mt-4 w-full rounded bg-accent py-3 text-center font-semibold text-accent-ink"
           >
             Add {repeatWeeks} week{repeatWeeks === 1 ? '' : 's'}
           </button>

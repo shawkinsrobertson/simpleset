@@ -1,16 +1,71 @@
 @import "tailwindcss";
 
+:root {
+  /* accent — warm, fixed for v1 (no cool-accent option shipped) */
+  --accent: #c6461d;
+  --accent-ink: #fcfbf9;
+
+  /* radius — constant across contrast levels */
+  --radius: 4px;
+
+  /* fonts */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ---- color mode: light (default) ---- */
+:root,
+:root[data-mode='light'] {
+  --bg: #fafaf8;
+  --card: #ffffff;
+  --text: #2a2a28;
+  --text-secondary: #84827c;
+  --border: #d8d6d0;
+}
+
+/* ---- color mode: dark ---- */
+:root[data-mode='dark'] {
+  --bg: #1c1c1a;
+  --card: #242422;
+  --text: #edede8;
+  --text-secondary: #8c8b86;
+  --border: #3a3a36;
+}
+
+/* ---- contrast: soft (default) ---- */
+:root,
+:root[data-contrast='soft'] {
+  --border-width: 1px;
+  --shadow-offset: 2px;
+}
+
+/* ---- contrast: high ---- */
+:root[data-contrast='high'][data-mode='light'] {
+  --bg: #f2f2f0;
+  --border: #141414;
+}
+:root[data-contrast='high'][data-mode='dark'] {
+  --bg: #121212;
+  --border: #f2f2f0;
+}
+:root[data-contrast='high'] {
+  --border-width: 2px;
+  --shadow-offset: 5px;
+}
+
 @theme {
-  --color-brand-50: #f0fdf9;
-  --color-brand-100: #ccfbef;
-  --color-brand-200: #99f6e0;
-  --color-brand-300: #5eead4;
-  --color-brand-400: #2dd4bf;
-  --color-brand-500: #14b8a6;
-  --color-brand-600: #0d9488;
-  --color-brand-700: #0f766e;
-  --color-brand-800: #115e59;
-  --color-brand-900: #134e4a;
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --radius-DEFAULT: var(--radius);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
 }
 
 html,
@@ -21,10 +76,26 @@ body,
 
 body {
   margin: 0;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--bg);
+  color: var(--text);
   -webkit-tap-highlight-color: transparent;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-body);
+}
+
+/*
+ * Tailwind's `border`/`border-t`/`border-b` utilities hardcode 1px. Since
+ * this file is unlayered CSS, these rules win over Tailwind's `utilities`
+ * layer regardless of source order, making the contrast toggle a single
+ * attribute flip instead of a per-component conditional.
+ */
+.border {
+  border-width: var(--border-width);
+}
+.border-t {
+  border-top-width: var(--border-width);
+}
+.border-b {
+  border-bottom-width: var(--border-width);
 }
 
 input[type='number']::-webkit-outer-spin-button,

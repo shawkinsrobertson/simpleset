@@ -15,12 +15,12 @@ export default function Modal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
+        className="w-full max-w-sm rounded-t border border-border bg-card p-5 sm:rounded"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          <button aria-label="Close" onClick={onClose} className="rounded p-1.5 text-slate-400 hover:text-slate-600">
+          <h2 className="text-base font-semibold text-text">{title}</h2>
+          <button aria-label="Close" onClick={onClose} className="rounded p-1.5 text-text-secondary hover:text-text">
             ✕
           </button>
         </div>

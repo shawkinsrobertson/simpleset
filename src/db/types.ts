@@ -68,6 +68,13 @@ export interface Exercise {
   /** Set when this exercise is part of a circuit/superset grouping — see ExerciseGroup. */
   groupId: string | null;
   /**
+   * Determines personal-record direction for timed exercises: 'strength'
+   * (holds/planks — longer is better) or 'conditioning' (runs/metcons —
+   * shorter is better). Irrelevant for weight/rep PRs, which are always
+   * higher-is-better.
+   */
+  category: 'strength' | 'conditioning';
+  /**
    * Set when this exercise disappears from a re-imported source doc (or is
    * resolved as "different exercise" during a rename review). Never
    * hard-deleted — logged sets still reference it and remain queryable in

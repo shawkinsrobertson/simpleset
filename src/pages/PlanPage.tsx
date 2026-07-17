@@ -40,8 +40,8 @@ export default function PlanPage() {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
         <span className="text-4xl">📋</span>
-        <h1 className="text-xl font-semibold text-slate-900">No plan yet</h1>
-        <Link to="/import" className="mt-2 rounded-xl bg-brand-600 px-5 py-3 font-semibold text-white">
+        <h1 className="text-xl font-semibold text-text">No plan yet</h1>
+        <Link to="/import" className="mt-2 rounded bg-accent px-5 py-3 font-semibold text-accent-ink">
           Import a plan
         </Link>
       </div>
@@ -62,8 +62,8 @@ export default function PlanPage() {
   return (
     <div className="flex flex-col gap-4 px-5 pt-8">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{plan.name}</h1>
-        <p className="text-sm text-slate-500">{days?.length ?? 0} days in this program</p>
+        <h1 className="text-2xl font-semibold text-text">{plan.name}</h1>
+        <p className="text-sm text-text-secondary">{days?.length ?? 0} days in this program</p>
       </div>
 
       <div className="flex flex-col gap-2.5">
@@ -73,36 +73,36 @@ export default function PlanPage() {
           const runs = groupIntoRuns(dayExercises, dayGroups);
           const isOpen = expanded === day.id;
           return (
-            <div key={day.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div key={day.id} className="rounded border border-border bg-card p-4">
               <button
                 className="flex w-full items-center justify-between text-left"
                 onClick={() => setExpanded(isOpen ? null : day.id)}
               >
                 <div>
-                  <p className="font-semibold text-slate-900">{day.label}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="font-semibold text-text">{day.label}</p>
+                  <p className="text-xs text-text-secondary">
                     Week {day.week} · {dayExercises.length} exercise{dayExercises.length === 1 ? '' : 's'}
                   </p>
                 </div>
-                <span className="text-slate-400">{isOpen ? '▲' : '▼'}</span>
+                <span className="text-text-secondary">{isOpen ? '▲' : '▼'}</span>
               </button>
 
               {isOpen && (
-                <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3">
+                <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
                   {runs.map((run, runIdx) => (
                     <div
                       key={run.group?.id ?? `solo-${runIdx}`}
-                      className={run.group ? 'rounded-lg border-l-4 border-brand-300 bg-brand-50/40 py-1 pl-2' : ''}
+                      className={run.group ? 'rounded border-l-4 border-accent bg-accent/10 py-1 pl-2' : ''}
                     >
                       {run.group && (
-                        <p className="mb-0.5 text-[11px] font-semibold text-brand-700">
+                        <p className="mb-0.5 text-[11px] font-semibold text-accent">
                           {run.group.label ?? (run.group.type === 'circuit' ? 'Circuit' : 'Superset')}
                         </p>
                       )}
                       {run.exercises.map((ex) => (
                         <div key={ex.id} className="flex items-center justify-between text-sm">
-                          <span className="text-slate-700">{ex.name}</span>
-                          <span className="text-slate-400">
+                          <span className="text-text">{ex.name}</span>
+                          <span className="text-text-secondary">
                             {ex.targetSets ?? '—'}×{ex.targetReps ?? ex.targetTime ?? '—'}
                             {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
                             {ex.targetRest ? ` · rest ${ex.targetRest}` : ''}
@@ -115,7 +115,7 @@ export default function PlanPage() {
                   <div className="mt-1 flex gap-2">
                     <button
                       onClick={() => duplicateDayInDb(plan.id, day.id)}
-                      className="flex-1 rounded-lg border border-slate-200 py-2 text-xs font-medium text-slate-600"
+                      className="flex-1 rounded border border-border py-2 text-xs font-medium text-text-secondary"
                     >
                       Duplicate day
                     </button>
@@ -124,7 +124,7 @@ export default function PlanPage() {
                         setRepeatDayId(day.id);
                         setRepeatWeeks(1);
                       }}
-                      className="flex-1 rounded-lg border border-slate-200 py-2 text-xs font-medium text-slate-600"
+                      className="flex-1 rounded border border-border py-2 text-xs font-medium text-text-secondary"
                     >
                       Repeat across weeks…
                     </button>
@@ -133,7 +133,7 @@ export default function PlanPage() {
                   {!openSession && (
                     <button
                       onClick={() => startSession(plan.id, day.id)}
-                      className="mt-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-brand-600"
+                      className="mt-1 rounded border border-border py-2 text-sm font-medium text-accent"
                     >
                       Start this day
                     </button>
@@ -147,10 +147,10 @@ export default function PlanPage() {
 
       {repeatDay && (
         <Modal title={`Repeat "${repeatDay.label}"`} onClose={() => setRepeatDayId(null)}>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-text-secondary">
             Add copies of this day for the next N weeks, keeping the same exercises.
           </p>
-          <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+          <label className="mt-3 flex items-center gap-2 text-sm text-text">
             Number of additional weeks
             <input
               type="number"
@@ -158,7 +158,7 @@ export default function PlanPage() {
               max={52}
               value={repeatWeeks}
               onChange={(e) => setRepeatWeeks(Math.max(1, Number(e.target.value) || 1))}
-              className="w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-center"
+              className="w-16 rounded border border-border px-2 py-1.5 text-center"
             />
           </label>
           <button
@@ -166,7 +166,7 @@ export default function PlanPage() {
               await repeatDayInDb(plan.id, repeatDay.id, repeatWeeks);
               setRepeatDayId(null);
             }}
-            className="mt-4 w-full rounded-xl bg-brand-600 py-3 text-center font-semibold text-white"
+            className="mt-4 w-full rounded bg-accent py-3 text-center font-semibold text-accent-ink"
           >
             Add {repeatWeeks} week{repeatWeeks === 1 ? '' : 's'}
           </button>
