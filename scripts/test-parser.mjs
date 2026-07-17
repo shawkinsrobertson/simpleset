@@ -33,12 +33,16 @@ function normalizeMMSS(line) {
   });
 }
 
+function stripInvisibleChars(line) {
+  return line.replace(/[\u200B-\u200F\u2060-\u2064\uFEFF]/g, '').trim();
+}
+
 function normalizeDashes(line) {
   return line.replace(/\u2013/g, '-').replace(/\u2014/g, '-');
 }
 
 function normalizeLine(raw) {
-  return normalizeDashes(normalizeMMSS(stripMarkdown(raw)));
+  return normalizeDashes(normalizeMMSS(stripMarkdown(stripInvisibleChars(raw))));
 }
 
 // ── textParser (mirrors src/parser/textParser.ts) ───────────────────────────
@@ -70,7 +74,8 @@ const REST_RE = new RegExp(
 const REPS_ONLY_RE =
   /\bx\s*(?<reps>\d+(?:\s*-\s*\d+)?)\s*(?:reps?)?\b(?:\s*\/\s*(?<side>leg|side|arm|hand))?/i;
 
-const COLON_REPS_RE = /:\s*(?<count>\d+(?:\s*-\s*\d+)?)\s*(?<unit>reps?|rounds?|flips?)\s*$/i;
+const COLON_COUNT_RE = /:\s*(?<count>\d+(?:\s*-\s*\d+)?)\s*(?<unit>reps?|rounds?|flips?|meters?|m\b|km\b|feet?|ft\b|yards?|yd\b)?\s*$/i;
+const DISTANCE_UNIT_RE = /^(meters?|m|km|feet?|ft|yards?|yd)$/i;
 
 function extractRest(text) {
   if (!text) return { rest: null, remaining: text };
@@ -155,11 +160,13 @@ function parseExerciseLine(rawLine) {
     return { name: name || '(unnamed)', targetReps: reps, targetSets: null, targetWeight: null, targetTime: null, targetRest: rest, notes, raw: rawLine };
   }
 
-  const colonRepsMatch = COLON_REPS_RE.exec(line);
-  if (colonRepsMatch) {
-    const name = line.slice(0, colonRepsMatch.index).trim();
+  const colonCountMatch = COLON_COUNT_RE.exec(line);
+  if (colonCountMatch) {
+    const name = line.slice(0, colonCountMatch.index).trim();
     if (name) {
-      return { name, targetReps: colonRepsMatch.groups.count, targetSets: null, targetWeight: null, targetTime: null, targetRest: null, notes: null, raw: rawLine };
+      const { count, unit } = colonCountMatch.groups;
+      const isDistance = unit ? DISTANCE_UNIT_RE.test(unit) : false;
+      return { name, targetReps: isDistance ? null : count.replace(/\s*-\s*/, '-'), targetSets: null, targetWeight: null, targetTime: null, targetRest: null, notes: isDistance ? `${count} ${unit}` : null, raw: rawLine };
     }
   }
 

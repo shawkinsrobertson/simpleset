@@ -54,10 +54,14 @@ const REST_RE = new RegExp(
 const REPS_ONLY_RE =
   /\bx\s*(?<reps>\d+(?:\s*-\s*\d+)?)\s*(?:reps?)?\b(?:\s*\/\s*(?<side>leg|side|arm|hand))?/i;
 
-// "Exercise Name: 5 reps", "Name: 4-5 reps", "Name: 3 rounds" — colon-separated
-// rep or round target. Handles both plain counts and ranges.
-// Anchored to end-of-line so it only fires after all other patterns have been tried.
-const COLON_REPS_RE = /:\s*(?<count>\d+(?:\s*-\s*\d+)?)\s*(?<unit>reps?|rounds?|flips?)\s*$/i;
+// "Exercise Name: 5 reps", "Name: 4-5 reps", "Name: 3 rounds",
+// "Sandbag Carries: 30 meters", "Farmer's Walk: 25m" — colon-separated count
+// with an optional unit. Rep/round/flip units → targetReps; distance units →
+// notes. Handles both plain counts and ranges. Anchored to end-of-line.
+const COLON_COUNT_RE =
+  /:\s*(?<count>\d+(?:\s*-\s*\d+)?)\s*(?<unit>reps?|rounds?|flips?|meters?|m\b|km\b|feet?|ft\b|yards?|yd\b)?\s*$/i;
+
+const DISTANCE_UNIT_RE = /^(meters?|m|km|feet?|ft|yards?|yd)$/i;
 
 /** Pulls an inline rest mention ("...,  30s rest") out of trailing/notes text, if present. */
 function extractRest(text: string): { rest: string | null; remaining: string } {
@@ -119,6 +123,23 @@ function normalizeMMSS(line: string): string {
 }
 
 /**
+ * Strips invisible Unicode formatting characters that PDF-exported documents
+ * (e.g. Google Docs → PDF) embed around every text run. These are
+ * zero-width spaces, joiners, separators and similar glyphs that are
+ * invisible to the eye but break every regex and bullet-strip pattern.
+ *
+ * Removed ranges:
+ *   U+200B–U+200F  (zero-width space / non-joiner / joiner / etc.)
+ *   U+2060–U+2064  (word joiner / invisible separator / invisible plus)
+ *   U+FEFF         (byte-order mark / zero-width no-break space)
+ *   U+2063         (invisible separator, common in Google Docs PDFs)
+ */
+function stripInvisibleChars(line: string): string {
+  // eslint-disable-next-line no-control-regex
+  return line.replace(/[\u200B-\u200F\u2060-\u2064\uFEFF]/g, '').trim();
+}
+
+/**
  * Normalises Unicode dashes to ASCII hyphens so rep-range regexes like
  * \d+-\d+ match "8–10" (en-dash) as well as "8-10" (hyphen).
  */
@@ -130,7 +151,7 @@ function normalizeDashes(line: string): string {
 
 /** Applies all pre-processing normalisations to a raw line before parsing. */
 function normalizeLine(raw: string): string {
-  return normalizeDashes(normalizeMMSS(stripMarkdown(raw)));
+  return normalizeDashes(normalizeMMSS(stripMarkdown(stripInvisibleChars(raw))));
 }
 
 /** True if the line carries any recognizable target (reps, weight, or a duration). */
@@ -263,17 +284,20 @@ function parseExerciseLine(rawLine: string): ParsedExercise | null {
     };
   }
 
-  // "Exercise Name: 5 reps" / "Exercise Name: 3 rounds" — colon-separated
-  // rep or round target, common in strongman and circuit descriptions.
-  const colonRepsMatch = COLON_REPS_RE.exec(line);
-  if (colonRepsMatch) {
-    const name = line.slice(0, colonRepsMatch.index).trim();
+  // "Exercise Name: 5 reps", "Sandbag Carries: 30 meters" — colon-separated
+  // count with an optional unit. Rep/round/flip targets go into targetReps;
+  // distance targets (meters, km, feet, etc.) go into notes.
+  const colonCountMatch = COLON_COUNT_RE.exec(line);
+  if (colonCountMatch) {
+    const name = line.slice(0, colonCountMatch.index).trim();
     if (name) {
+      const { count, unit } = colonCountMatch.groups!;
+      const isDistance = unit ? DISTANCE_UNIT_RE.test(unit) : false;
       return {
         ...baseExercise(rawLine),
         name,
-        targetReps: colonRepsMatch.groups!.count,
-        notes: null,
+        targetReps: isDistance ? null : count.replace(/\s*-\s*/, '-'),
+        notes: isDistance ? `${count} ${unit}` : null,
       };
     }
   }
