@@ -39,7 +39,6 @@ export default function PlanPage() {
   if (!plan) {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
-        <span className="text-4xl">📋</span>
         <h1 className="text-xl font-semibold text-text">No plan yet</h1>
         <Link to="/import" className="btn-primary mt-2 px-5 py-3">
           Import a plan

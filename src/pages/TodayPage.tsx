@@ -84,7 +84,6 @@ export default function TodayPage() {
   if (!plan) {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
-        <span className="text-4xl">🗒️</span>
         <h1 className="font-display text-xl font-semibold text-text">No plan yet</h1>
         <p className="text-sm text-text-secondary">Import a workout plan to start tracking your training.</p>
         <Link to="/import" className="btn-primary mt-2 px-5 py-3">
@@ -97,7 +96,6 @@ export default function TodayPage() {
   if (planDays && planDays.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
-        <span className="text-4xl">🤔</span>
         <h1 className="font-display text-xl font-semibold text-text">This plan has no days yet</h1>
         <p className="text-sm text-text-secondary">Head to Plans to re-import or edit "{plan.name}".</p>
       </div>
