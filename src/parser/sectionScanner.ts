@@ -76,8 +76,11 @@ function isHeadingForScanner(line: string): boolean {
   if (WEEKDAY_RE.test(line)) return true;
   if (CALENDAR_DATE_RE.test(line)) return true;
 
-  // Known workout-section keywords — single words like "WORKOUT" are fine.
-  if (SECTION_KEYWORD_RE.test(line)) return true;
+  // Known workout-section keywords — single words like "WORKOUT" are fine,
+  // but require the line to be short and contain no sentence punctuation.
+  // This prevents prose sentences like "cool down. By clicking on a
+  // highlighted exercise…" from being treated as headings.
+  if (SECTION_KEYWORD_RE.test(line) && line.length <= 50 && !/[.;]/.test(line)) return true;
 
   // All other heuristic heading detection requires ≥ 2 words.
   // This filters single-word PDF-title fragments and isolated prose words.
@@ -181,7 +184,7 @@ export function scanSections(text: string): DocumentSection[] {
 export function needsSectionPicker(sections: DocumentSection[]): boolean {
   if (sections.length < 4) return false;
   const emptyCount = sections.filter((s) => s.exerciseCount === 0).length;
-  return emptyCount >= 3 && emptyCount / sections.length > 0.1;
+  return emptyCount >= 5;
 }
 
 /**
