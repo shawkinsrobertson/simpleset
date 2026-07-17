@@ -42,9 +42,6 @@ export default function ImportPage() {
       // as unselected.
       if (kind === 'pdf') {
         const sections = scanSections(text);
-        const emptyCount = sections.filter(s => s.exerciseCount === 0).length;
-        console.log('[picker-debug] sections:', sections.length, 'empty:', emptyCount, 'ratio:', emptyCount / sections.length, 'needsPicker:', needsSectionPicker(sections));
-        console.log('[picker-debug] first 10 sections:', sections.slice(0, 10).map(s => `${s.title} (${s.exerciseCount}ex)`));
         if (needsSectionPicker(sections)) {
           navigate('/import/sections', {
             state: { sections, extractedText: text, fallbackName, ...sourceState },

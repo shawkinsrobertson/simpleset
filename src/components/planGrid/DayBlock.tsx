@@ -40,6 +40,8 @@ export interface DayBlockProps {
   onReorderExercises: (newOrderTempIds: string[]) => void;
   onGroupExercises: (exTempIds: string[], type: ExerciseGroupType) => void;
   onUngroup: (groupTempId: string) => void;
+  /** Split this day at exTempId: everything from that row onward becomes a new day. */
+  onSplitDayAt?: (exTempId: string) => void;
 }
 
 export default function DayBlock({
@@ -56,6 +58,7 @@ export default function DayBlock({
   onReorderExercises,
   onGroupExercises,
   onUngroup,
+  onSplitDayAt,
 }: DayBlockProps) {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -99,11 +102,29 @@ export default function DayBlock({
     onReorderExercises(arrayMove(ids, oldIndex, newIndex));
   };
 
+  const menuExIdx = menuForExTempId ? day.exercises.findIndex((e) => e.tempId === menuForExTempId) : -1;
+  const menuEx = menuExIdx !== -1 ? day.exercises[menuExIdx] : null;
+  const menuExAbove = menuExIdx > 0 ? day.exercises[menuExIdx - 1] : null;
+
+  /** Append this row's name as a note on the exercise directly above, then delete this row. */
+  const mergeIntoNoteAbove = () => {
+    if (!menuEx || !menuExAbove) return;
+    const joined = [menuExAbove.notes, menuEx.name].filter(Boolean).join(' · ');
+    onUpdateExercise(menuExAbove.tempId, { notes: joined });
+    onDeleteExercise(menuEx.tempId);
+  };
+
   const menuActions: RowAction[] = menuForExTempId
     ? [
         { label: 'Insert row above', onClick: () => onInsertExercise(previousExTempId(day.exercises, menuForExTempId)) },
         { label: 'Insert row below', onClick: () => onInsertExercise(menuForExTempId) },
         { label: 'Duplicate row', onClick: () => onDuplicateExercise(menuForExTempId) },
+        ...(onSplitDayAt
+          ? [{ label: 'Start new day here', onClick: () => onSplitDayAt(menuForExTempId) }]
+          : []),
+        ...(menuExAbove
+          ? [{ label: 'Move to notes on row above', onClick: mergeIntoNoteAbove }]
+          : []),
         { label: 'Select multiple…', onClick: () => enterSelectionMode(menuForExTempId) },
         { label: 'Delete row', onClick: () => onDeleteExercise(menuForExTempId), destructive: true },
       ]

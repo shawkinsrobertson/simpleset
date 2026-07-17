@@ -138,6 +138,56 @@ export default function ConfirmPage() {
     });
   };
 
+  const splitDayAt = (dayTempId: string, exTempId: string) => {
+    setPlan((p) => {
+      if (!p) return p;
+      const dayIdx = p.days.findIndex((d) => d.tempId === dayTempId);
+      if (dayIdx === -1) return p;
+      const day = p.days[dayIdx];
+      const exIdx = day.exercises.findIndex((e) => e.tempId === exTempId);
+      if (exIdx === -1) return p;
+
+      const keepExercises = day.exercises.slice(0, exIdx);
+      const splitExercises = day.exercises.slice(exIdx);
+
+      // If the first exercise of the split has no targets, treat it as a day
+      // label (e.g. a misparsed date "July17") and remove it from the list.
+      const firstEx = splitExercises[0];
+      const isHeaderLike =
+        firstEx &&
+        !firstEx.targetSets &&
+        !firstEx.targetReps &&
+        !firstEx.targetWeight &&
+        !firstEx.targetTime &&
+        firstEx.name.trim().length > 0;
+
+      const newLabel = isHeaderLike ? firstEx.name.trim() : 'New Day';
+      const newExercises = isHeaderLike ? splitExercises.slice(1) : splitExercises;
+
+      // Keep only groups whose exercises remain in each half.
+      const splitGroupIds = new Set(newExercises.map((e) => e.groupTempId).filter(Boolean));
+      const keepGroupIds = new Set(keepExercises.map((e) => e.groupTempId).filter(Boolean));
+
+      const updatedDay: ParsedDay = {
+        ...day,
+        exercises: keepExercises,
+        groups: day.groups.filter((g) => keepGroupIds.has(g.tempId)),
+      };
+      const newDay: ParsedDay = {
+        tempId: crypto.randomUUID(),
+        week: day.week,
+        label: newLabel,
+        exercises: newExercises,
+        groups: day.groups.filter((g) => splitGroupIds.has(g.tempId)),
+      };
+
+      const days = [...p.days];
+      days[dayIdx] = updatedDay;
+      days.splice(dayIdx + 1, 0, newDay);
+      return { ...p, days };
+    });
+  };
+
   const reorderExercises = (dayTempId: string, newOrderTempIds: string[]) => {
     withDay(dayTempId, (d) => {
       const byId = new Map(d.exercises.map((e) => [e.tempId, e]));
@@ -237,6 +287,7 @@ export default function ConfirmPage() {
             onReorderExercises={(newOrder) => reorderExercises(day.tempId, newOrder)}
             onGroupExercises={(exTempIds, type) => groupExercises(day.tempId, exTempIds, type)}
             onUngroup={(groupTempId) => ungroup(day.tempId, groupTempId)}
+            onSplitDayAt={(exTempId) => splitDayAt(day.tempId, exTempId)}
           />
         ))}
       </div>
