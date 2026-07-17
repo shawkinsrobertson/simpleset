@@ -276,33 +276,20 @@ function parseXlsxBuffer(buf, fallbackName) {
   return parsePlanText(asText, fallbackName);
 }
 
-// ── PDF extractor (Node.js, no worker) ───────────────────────────────────────
+// ── PDF extractor (uses system pdftotext) ────────────────────────────────────
 async function extractTextFromPdfBuffer(buf) {
-  // Dynamic import to avoid top-level issues with the ESM build
-  const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
-  // Disable worker for Node.js
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf), useWorkerFetch: false, isEvalSupported: false, useSystemFonts: true }).promise;
-  const lines = [];
-  for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
-    const page = await doc.getPage(pageNum);
-    const content = await page.getTextContent();
-    let lastY = null;
-    let currentLine = [];
-    for (const item of content.items) {
-      if (!('str' in item)) continue;
-      const y = item.transform[5];
-      if (lastY !== null && Math.abs(y - lastY) > 2) {
-        lines.push(currentLine.join(''));
-        currentLine = [];
-      }
-      currentLine.push(item.str);
-      lastY = y;
-    }
-    if (currentLine.length) lines.push(currentLine.join(''));
-    lines.push('');
+  const { execFile } = await import('child_process');
+  const { promisify } = await import('util');
+  const { writeFile, unlink } = await import('fs/promises');
+  const execFileAsync = promisify(execFile);
+  const tmpIn = `/tmp/_pdf_in_${Date.now()}.pdf`;
+  await writeFile(tmpIn, buf);
+  try {
+    const { stdout } = await execFileAsync('pdftotext', ['-layout', tmpIn, '-']);
+    return stdout;
+  } finally {
+    await unlink(tmpIn).catch(() => {});
   }
-  return lines.join('\n');
 }
 
 // ── display ───────────────────────────────────────────────────────────────────
