@@ -1,0 +1,1 @@
+- [Section picker design](section-picker.md) — picker shown only for PDFs; DOCX/text bypass it (tri-set format makes per-section exercise counts unreliable).

@@ -7,6 +7,11 @@ import { parseCsvText, parseXlsxFile } from './xlsx';
 
 export type { ParsedPlan, ParsedDay, ParsedExercise } from './types';
 export { detectFileKind } from './types';
+export { scanSections, needsSectionPicker, filterTextToSections } from './sectionScanner';
+export type { DocumentSection } from './sectionScanner';
+export { extractTextFromPdf } from './pdf';
+export { extractTextFromDocx } from './docx';
+export { parsePlanText } from './textParser';
 
 function fallbackNameFromFile(file: File): string {
   return file.name.replace(/\.[^.]+$/, '');

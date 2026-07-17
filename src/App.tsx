@@ -5,6 +5,7 @@ import PlanPage from './pages/PlanPage';
 import StatsPage from './pages/StatsPage';
 import PlansPage from './pages/PlansPage';
 import ImportPage from './pages/ImportPage';
+import SectionPickerPage from './pages/SectionPickerPage';
 import ConfirmPage from './pages/ConfirmPage';
 import DriveImportPage from './pages/DriveImportPage';
 import SyncReviewPage from './pages/SyncReviewPage';
@@ -31,6 +32,7 @@ function App() {
         <Route path="/log/:exerciseId" element={<LoggingPage />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="/import/drive" element={<DriveImportPage />} />
+        <Route path="/import/sections" element={<SectionPickerPage />} />
         <Route path="/confirm" element={<ConfirmPage />} />
         <Route path="/sync-review" element={<SyncReviewPage />} />
         <Route path="*" element={<Navigate to="/today" replace />} />

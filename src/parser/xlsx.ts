@@ -78,13 +78,20 @@ function parseStructuredSheet(rows: unknown[][], cols: Record<string, number>): 
       groupTempId: null,
       raw: row.map((c) => String(c ?? '')).join(' | '),
     };
-    if (exercise.targetSets === null && exercise.targetReps === null && exercise.targetTime === null) {
-      warnings.push(`Couldn't find sets/reps/time for "${exercise.name}" — check it on the next screen.`);
-    }
     currentDay.exercises.push(exercise);
   }
 
-  return { name: '', days: days.filter((d) => d.exercises.length > 0), warnings };
+  const filteredDays = days.filter((d) => d.exercises.length > 0);
+  const noTargetCount = filteredDays
+    .flatMap((d) => d.exercises)
+    .filter((e) => e.targetSets === null && e.targetReps === null && e.targetTime === null).length;
+  if (noTargetCount > 0) {
+    warnings.push(
+      `${noTargetCount} exercise${noTargetCount === 1 ? '' : 's'} couldn't be matched to sets/reps/time — they're included below so you can fill them in.`,
+    );
+  }
+
+  return { name: '', days: filteredDays, warnings };
 }
 
 export function parseSheetRows(rows: unknown[][], fallbackName: string): ParsedPlan {
@@ -92,9 +99,22 @@ export function parseSheetRows(rows: unknown[][], fallbackName: string): ParsedP
     return { name: fallbackName, days: [], warnings: ['The spreadsheet appears to be empty.'] };
   }
 
-  const headerCols = detectColumns(rows[0]);
-  if (headerCols) {
-    const result = parseStructuredSheet(rows.slice(1), headerCols);
+  // Scan the first few rows for a recognisable header rather than assuming
+  // row 0 is always the header. Many real-world spreadsheets have a title
+  // row (or blank rows) above the actual column names.
+  let headerCols: Record<string, number> | null = null;
+  let headerRowIdx = -1;
+  for (let i = 0; i < Math.min(rows.length, 6); i++) {
+    const cols = detectColumns(rows[i]);
+    if (cols) {
+      headerCols = cols;
+      headerRowIdx = i;
+      break;
+    }
+  }
+
+  if (headerCols && headerRowIdx >= 0) {
+    const result = parseStructuredSheet(rows.slice(headerRowIdx + 1), headerCols);
     return { ...result, name: fallbackName };
   }
 

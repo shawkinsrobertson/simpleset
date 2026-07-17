@@ -120,8 +120,9 @@ Down Dog Pedal and Reach
     ]);
     expect(plan.days[1].exercises).toHaveLength(4);
     expect(plan.days[2].exercises).toHaveLength(2);
-    // Every exercise still gets flagged since none had recognizable sets/reps.
-    expect(plan.warnings.length).toBeGreaterThanOrEqual(9);
+    // All exercises without targets now produce one consolidated warning.
+    expect(plan.warnings).toHaveLength(1);
+    expect(plan.warnings[0]).toMatch(/9 exercises couldn't be matched/);
   });
 
   it('still promotes a short plain-case line to a new day when nothing is open yet', () => {
