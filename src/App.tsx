@@ -8,6 +8,9 @@ import ImportPage from './pages/ImportPage';
 import ConfirmPage from './pages/ConfirmPage';
 import DriveImportPage from './pages/DriveImportPage';
 import SyncReviewPage from './pages/SyncReviewPage';
+import SettingsPage from './pages/SettingsPage';
+import LoggingPage from './pages/LoggingPage';
+import DetailedStatsPage from './pages/DetailedStatsPage';
 
 const WIDE_ROUTES = ['/confirm', '/sync-review'];
 
@@ -22,7 +25,10 @@ function App() {
         <Route path="/today" element={<TodayPage />} />
         <Route path="/plan" element={<PlanPage />} />
         <Route path="/stats" element={<StatsPage />} />
+        <Route path="/stats/detailed" element={<DetailedStatsPage />} />
         <Route path="/plans" element={<PlansPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/log/:exerciseId" element={<LoggingPage />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="/import/drive" element={<DriveImportPage />} />
         <Route path="/confirm" element={<ConfirmPage />} />

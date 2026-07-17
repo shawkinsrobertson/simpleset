@@ -5,7 +5,7 @@ import { classifyRepsOrTime, repsOrTimeDisplay } from '../../lib/duration';
 import { useLongPress } from '../../hooks/useLongPress';
 
 const FIELD_INPUT =
-  'w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm focus:border-brand-400 focus:outline-none sm:rounded sm:border-0 sm:bg-transparent sm:px-2 sm:py-2 sm:focus:bg-brand-50';
+  'w-full rounded border border-border bg-card px-2 py-2 text-sm focus:border-accent focus:outline-none sm:rounded sm:border-0 sm:bg-transparent sm:px-2 sm:py-2 sm:focus:bg-accent/10';
 
 interface ExerciseRowProps {
   exercise: ParsedExercise;
@@ -49,9 +49,9 @@ export default function ExerciseRow({
       ref={setNodeRef}
       style={style}
       {...longPress}
-      className={`rounded-xl border bg-white p-2.5 sm:rounded-none sm:border-0 sm:border-b sm:border-slate-100 sm:p-1 sm:last:border-b-0 ${
+      className={`rounded border bg-card p-2.5 sm:rounded-none sm:border-0 sm:border-b sm:border-border sm:p-1 sm:last:border-b-0 ${
         isDragging ? 'opacity-50' : ''
-      } ${selected ? 'border-brand-300 bg-brand-50' : 'border-slate-200'}`}
+      } ${selected ? 'border-accent bg-accent/10' : 'border-border'}`}
     >
       {/* Mobile card layout */}
       <div className="sm:hidden">
@@ -61,7 +61,7 @@ export default function ExerciseRow({
               type="checkbox"
               checked={selected}
               onChange={onToggleSelect}
-              className="h-5 w-5 shrink-0 accent-brand-600"
+              className="h-5 w-5 shrink-0 accent-accent"
               aria-label="Select exercise"
             />
           ) : (
@@ -69,7 +69,7 @@ export default function ExerciseRow({
               {...attributes}
               {...listeners}
               aria-label="Drag to reorder"
-              className="flex h-8 w-8 shrink-0 items-center justify-center text-slate-300 active:text-slate-500"
+              className="flex h-8 w-8 shrink-0 items-center justify-center text-text-secondary active:text-text-secondary"
             >
               ☰
             </button>
@@ -86,7 +86,7 @@ export default function ExerciseRow({
             <button
               aria-label="Row actions"
               onClick={onOpenMenu}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-text-secondary"
             >
               ⋮
             </button>
@@ -94,7 +94,7 @@ export default function ExerciseRow({
         </div>
         <div className="mt-1.5 grid grid-cols-4 gap-1.5" onClick={handleBodyClick}>
           <div>
-            <label className="block text-[10px] font-medium uppercase text-slate-400">Sets</label>
+            <label className="block text-[10px] font-medium uppercase text-text-secondary">Sets</label>
             <input
               placeholder="—"
               inputMode="numeric"
@@ -105,7 +105,7 @@ export default function ExerciseRow({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-medium uppercase text-slate-400">Reps/Time</label>
+            <label className="block text-[10px] font-medium uppercase text-text-secondary">Reps/Time</label>
             <input
               placeholder="—"
               className={`${FIELD_INPUT} text-center`}
@@ -115,7 +115,7 @@ export default function ExerciseRow({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-medium uppercase text-slate-400">Rest</label>
+            <label className="block text-[10px] font-medium uppercase text-text-secondary">Rest</label>
             <input
               placeholder="—"
               className={`${FIELD_INPUT} text-center`}
@@ -125,7 +125,7 @@ export default function ExerciseRow({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-medium uppercase text-slate-400">Weight</label>
+            <label className="block text-[10px] font-medium uppercase text-text-secondary">Weight</label>
             <input
               placeholder="—"
               className={`${FIELD_INPUT} text-center`}
@@ -153,7 +153,7 @@ export default function ExerciseRow({
               type="checkbox"
               checked={selected}
               onChange={onToggleSelect}
-              className="h-4 w-4 accent-brand-600"
+              className="h-4 w-4 accent-accent"
               aria-label="Select exercise"
             />
           </div>
@@ -162,7 +162,7 @@ export default function ExerciseRow({
             {...attributes}
             {...listeners}
             aria-label="Drag to reorder"
-            className="flex h-7 w-5 shrink-0 cursor-grab items-center justify-center text-slate-300 active:cursor-grabbing"
+            className="flex h-7 w-5 shrink-0 cursor-grab items-center justify-center text-text-secondary active:cursor-grabbing"
           >
             ☰
           </button>
@@ -226,7 +226,7 @@ export default function ExerciseRow({
           <button
             aria-label="Row actions"
             onClick={onOpenMenu}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-400 hover:text-slate-600"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-text-secondary hover:text-text-secondary"
           >
             ⋮
           </button>

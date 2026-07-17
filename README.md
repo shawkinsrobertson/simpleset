@@ -58,6 +58,55 @@ real editable grid, not a form:
   confirm/sync-review screens, which widen on larger viewports since a
   multi-column editor benefits from the extra room a phone never has.
 
+## Design system
+
+Look and feel run entirely on CSS custom properties (`src/index.css`), so
+color mode and contrast level swap at runtime with a single attribute flip
+on `<html>` — no per-component conditionals, no rebuild:
+
+- **Tokens**: `--accent`/`--accent-ink` (a fixed warm accent for v1),
+  `--radius`, and three font roles (`--font-display` for the wordmark/
+  titles, `--font-body` for UI text, `--font-mono` for every number —
+  weights, reps, dates, stats). `--bg`/`--card`/`--text`/`--text-secondary`/
+  `--border` are redefined per `[data-mode]`; `--border-width`/
+  `--shadow-offset` per `[data-contrast]`.
+- **Light/dark** (`data-mode`) and **soft/high contrast** (`data-contrast`,
+  the "Increase contrast" toggle under Settings → Display) are managed by
+  `src/lib/theme.ts` + `src/hooks/useTheme.ts` and persisted to
+  `localStorage`. `index.css` overrides Tailwind's `border`/`border-t`/
+  `border-b` utilities to read `--border-width`, so the toggle doesn't
+  depend on every component opting in.
+- **Offset card** (`src/components/Card.tsx`): the signature "needs
+  attention" treatment — a solid accent-filled block, a real second
+  element (never `box-shadow`), positioned `--shadow-offset` behind the
+  card. Reserved for the active/in-progress state; done/todo never use it.
+- **Component states** (done/active/todo) are consistent everywhere they
+  recur — exercise cards on Day view, set rows on the Logging screen — via
+  `Card` and `StatusBox`. Active buttons show live progress in the label
+  (`in progress 2/3`), not a static string.
+
+## Tracking flow
+
+Today's Day view is a checklist: a compact status-box row plus a card per
+exercise (done/active/todo), tapping a card opens a dedicated **Logging
+screen** (`/log/:exerciseId`) with sets as rows — done sets collapsed and
+dimmed, the active set has editable inputs pre-filled from the plan's
+target, upcoming sets shown as empty outline boxes. Streaks count
+consecutive *completed* sessions (a skip breaks it); "sessions completed"
+is a fraction scoped to the plan's current lap through its days, not a
+lifetime total.
+
+## Stats
+
+A compact Stats screen (streak, cycle-scoped sessions completed, a
+tappable/cyclable PR card, an 8-week consistency grid, per-exercise
+sparklines) and a Detailed stats screen (`/stats/detailed`, range-controlled
+consistency grid, full PR list, secondary volume/frequency stats). Personal
+records are direction-aware: weight/reps are always higher-is-better;
+timed exercises depend on `Exercise.category` — `strength` (holds/planks)
+means longer is better, `conditioning` (runs/metcons) means shorter is
+better.
+
 ## Plan sync (re-import)
 
 Logged history never depends on the live plan structure to make sense —

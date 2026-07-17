@@ -1,56 +1,54 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useActivePlan } from '../hooks/useActivePlan';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import { getAdherence, getExerciseTrend, getExercisesWithHistory, getVolumeOverTime } from '../lib/stats';
-import type { AdherenceStats, ExerciseTrendPoint, VolumePoint } from '../lib/stats';
-import type { Exercise } from '../db/types';
+import { useLiveValue } from '../hooks/useLiveValue';
+import { getConsistencyGrid, getCycleProgress, getExercisesWithHistory, getPersonalRecords, getStreak } from '../lib/stats';
+import Card from '../components/Card';
+import ExerciseSparkRow from '../components/ExerciseSparkRow';
+import ConsistencyGrid from '../components/ConsistencyGrid';
 
-const dateFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+function PrCard({ prs }: { prs: Awaited<ReturnType<typeof getPersonalRecords>> }) {
+  const [index, setIndex] = useState(0);
+  if (prs.length === 0) {
+    return (
+      <Card className="p-3 text-center">
+        <p className="text-sm text-text-secondary">No PRs yet</p>
+      </Card>
+    );
+  }
+  const pr = prs[index % prs.length];
+  return (
+    <Card className="p-3 text-center" as="button" onClick={() => setIndex((i) => i + 1)}>
+      <p className="truncate text-[11px] font-medium text-text-secondary">{pr.exerciseName}</p>
+      <p className="font-mono text-lg font-semibold text-text">{pr.display}</p>
+      {prs.length > 1 && (
+        <div className="mt-1 flex justify-center gap-1">
+          {prs.map((_, i) => (
+            <span
+              key={i}
+              className="h-1.5 w-1.5"
+              style={{ backgroundColor: i === index % prs.length ? 'var(--accent)' : 'var(--border)' }}
+            />
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
 
 export default function StatsPage() {
   const { loading: planLoading, plan } = useActivePlan();
-  const [volume, setVolume] = useState<VolumePoint[]>([]);
-  const [adherence, setAdherence] = useState<AdherenceStats | null>(null);
-  const [exercisesWithHistory, setExercisesWithHistory] = useState<Exercise[]>([]);
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
-  const [trend, setTrend] = useState<ExerciseTrendPoint[]>([]);
 
-  useEffect(() => {
-    if (!plan) return;
-    getVolumeOverTime(plan.id).then(setVolume);
-    getAdherence(plan.id).then(setAdherence);
-    getExercisesWithHistory(plan.id).then((exs) => {
-      setExercisesWithHistory(exs);
-      setSelectedExerciseId((prev) => prev || exs[0]?.id || '');
-    });
-  }, [plan]);
-
-  useEffect(() => {
-    if (!plan || !selectedExerciseId) {
-      setTrend([]);
-      return;
-    }
-    getExerciseTrend(plan.id, selectedExerciseId).then(setTrend);
-  }, [plan, selectedExerciseId]);
-
-  const volumeData = useMemo(
-    () => volume.map((v) => ({ date: dateFmt.format(v.date), volume: Math.round(v.volume) })),
-    [volume],
+  const { value: streak } = useLiveValue(() => (plan ? getStreak(plan.id) : Promise.resolve(0)), [plan?.id]);
+  const { value: cycle } = useLiveValue(
+    () => (plan ? getCycleProgress(plan.id) : Promise.resolve({ completed: 0, total: 0 })),
+    [plan?.id],
   );
-  const trendData = useMemo(
-    () => trend.map((t) => ({ date: dateFmt.format(t.date), weight: t.topWeight, reps: t.totalReps })),
-    [trend],
+  const { value: prs } = useLiveValue(() => (plan ? getPersonalRecords(plan.id) : Promise.resolve([])), [plan?.id]);
+  const { value: grid } = useLiveValue(() => (plan ? getConsistencyGrid(plan.id, 8) : Promise.resolve([])), [plan?.id]);
+  const { value: exercisesWithHistory } = useLiveValue(
+    () => (plan ? getExercisesWithHistory(plan.id) : Promise.resolve([])),
+    [plan?.id],
   );
 
   if (planLoading) return null;
@@ -59,8 +57,8 @@ export default function StatsPage() {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
         <span className="text-4xl">📈</span>
-        <h1 className="text-xl font-semibold text-slate-900">No stats yet</h1>
-        <Link to="/import" className="mt-2 rounded-xl bg-brand-600 px-5 py-3 font-semibold text-white">
+        <h1 className="text-xl font-semibold text-text">No stats yet</h1>
+        <Link to="/import" className="mt-2 rounded bg-accent px-5 py-3 font-semibold text-accent-ink">
           Import a plan
         </Link>
       </div>
@@ -68,78 +66,50 @@ export default function StatsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 px-5 pt-8">
-      <h1 className="text-2xl font-semibold text-slate-900">Stats</h1>
+    <div className="flex flex-col gap-5 px-5 pt-8">
+      <h1 className="font-display text-2xl font-semibold text-text">Stats</h1>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="font-semibold text-slate-800">Adherence</h2>
-        {adherence && adherence.total > 0 ? (
-          <div className="mt-2 flex items-center gap-4">
-            <span className="text-3xl font-bold text-brand-600">{adherence.percent}%</span>
-            <p className="text-sm text-slate-500">
-              {adherence.completed} completed, {adherence.skipped} skipped ({adherence.total} sessions)
-            </p>
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-slate-400">Finish or skip a workout to see adherence.</p>
-        )}
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="font-semibold text-slate-800">Volume over time</h2>
-        {volumeData.length > 0 ? (
-          <div className="mt-3 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={volumeData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" width={40} />
-                <Tooltip />
-                <Bar dataKey="volume" fill="#0d9488" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-slate-400">Complete a workout to see your volume trend.</p>
-        )}
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-slate-800">Per-exercise progress</h2>
-          {exercisesWithHistory.length > 0 && (
-            <select
-              value={selectedExerciseId}
-              onChange={(e) => setSelectedExerciseId(e.target.value)}
-              className="rounded-lg border border-slate-200 px-2 py-1 text-sm"
-            >
-              {exercisesWithHistory.map((ex) => (
-                <option key={ex.id} value={ex.id}>
-                  {ex.name}
-                  {ex.archived ? ' (archived)' : ''}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-        {trendData.length > 0 ? (
-          <div className="mt-3 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" width={40} />
-                <Tooltip />
-                <Line type="monotone" dataKey="weight" stroke="#0d9488" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-slate-400">
-            Log a few sessions to see weight/reps trends per exercise.
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="p-3 text-center">
+          <p className="font-mono text-xl font-semibold text-text">🔥{streak ?? 0}</p>
+          <p className="text-[10px] uppercase tracking-wide text-text-secondary">Streak</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <p className="font-mono text-xl font-semibold text-text">
+            {cycle?.completed ?? 0}/{cycle?.total ?? 0}
           </p>
+          <p className="text-[10px] uppercase tracking-wide text-text-secondary">Sessions completed</p>
+        </Card>
+        {prs && <PrCard prs={prs} />}
+      </div>
+
+      <section>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">Consistency</h2>
+        {grid && grid.some((w) => w.some((d) => d.completed)) ? (
+          <Card className="p-3">
+            <ConsistencyGrid weeks={grid} />
+          </Card>
+        ) : (
+          <p className="text-sm text-text-secondary">Complete a workout to start building your streak.</p>
         )}
       </section>
+
+      <section>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">Exercises</h2>
+        {exercisesWithHistory && exercisesWithHistory.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {exercisesWithHistory.map((ex) => (
+              <ExerciseSparkRow key={ex.id} planId={plan.id} exerciseId={ex.id} name={ex.name} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-text-secondary">Log a few sessions to see per-exercise trends.</p>
+        )}
+      </section>
+
+      <Link to="/stats/detailed" className="rounded border border-border py-3 text-center text-sm font-medium text-text">
+        View detailed stats
+      </Link>
     </div>
   );
 }

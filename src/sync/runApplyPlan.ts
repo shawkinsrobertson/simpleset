@@ -51,6 +51,7 @@ export async function runApplyPlan(plan: ApplyPlan): Promise<void> {
         // Re-synced text never carries group info (the parser doesn't detect
         // circuits/supersets) — new exercises from a diff always land ungrouped.
         groupId: null,
+        category: 'strength',
         archived: false,
       });
     }

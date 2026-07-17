@@ -28,10 +28,10 @@ export default function RowActionMenu({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
       <div
-        className="w-full max-w-sm rounded-t-2xl bg-white p-2 shadow-xl sm:rounded-2xl"
+        className="w-full max-w-sm rounded-t border border-border bg-card p-2 sm:rounded"
         onClick={(e) => e.stopPropagation()}
       >
-        {title && <p className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-400">{title}</p>}
+        {title && <p className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-text-secondary">{title}</p>}
         <div className="flex flex-col">
           {actions.map((a) => (
             <button
@@ -40,16 +40,16 @@ export default function RowActionMenu({
                 a.onClick();
                 onClose();
               }}
-              className={`rounded-xl px-3 py-3.5 text-left text-sm font-medium ${
-                a.destructive ? 'text-red-600' : 'text-slate-700'
-              } active:bg-slate-100`}
+              className={`rounded px-3 py-3.5 text-left text-sm font-medium ${
+                a.destructive ? 'text-red-600' : 'text-text'
+              } active:bg-bg`}
             >
               {a.label}
             </button>
           ))}
           <button
             onClick={onClose}
-            className="mt-1 rounded-xl px-3 py-3.5 text-left text-sm font-medium text-slate-400 active:bg-slate-100"
+            className="mt-1 rounded px-3 py-3.5 text-left text-sm font-medium text-text-secondary active:bg-bg"
           >
             Cancel
           </button>

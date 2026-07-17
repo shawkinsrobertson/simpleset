@@ -29,6 +29,7 @@ function ex(overrides: Partial<Exercise>): Exercise {
     targetRest: null,
     notes: null,
     groupId: null,
+    category: 'strength',
     archived: false,
     ...overrides,
   };

@@ -18,20 +18,20 @@ const KIND_LABEL: Record<string, string> = {
   removed: 'Removed',
 };
 const KIND_STYLE: Record<string, string> = {
-  new: 'bg-brand-50 text-brand-700',
+  new: 'bg-accent/10 text-accent',
   modified: 'bg-blue-50 text-blue-700',
-  removed: 'bg-slate-100 text-slate-500',
+  removed: 'bg-bg text-text-secondary',
 };
 
 function ExerciseRow({ m }: { m: ExerciseMatch }) {
   const name = m.parsedExercise?.name ?? m.existingExercise?.name ?? '';
   return (
-    <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+    <div className="flex items-center justify-between rounded bg-bg px-3 py-2 text-sm">
       <div>
-        <p className="font-medium text-slate-800">{name}</p>
-        <p className="text-xs text-slate-400">{m.dayLabel}</p>
+        <p className="font-medium text-text">{name}</p>
+        <p className="text-xs text-text-secondary">{m.dayLabel}</p>
       </div>
-      {m.detail && <p className="text-right text-xs text-slate-500">{m.detail}</p>}
+      {m.detail && <p className="text-right text-xs text-text-secondary">{m.detail}</p>}
     </div>
   );
 }
@@ -85,9 +85,9 @@ export default function SyncReviewPage() {
 
   if (!state) {
     return (
-      <div className="px-5 pt-10 text-center text-slate-500">
+      <div className="px-5 pt-10 text-center text-text-secondary">
         <p>Nothing to review.</p>
-        <button className="mt-4 rounded-xl bg-brand-600 px-4 py-2 text-white" onClick={() => navigate('/plans')}>
+        <button className="mt-4 rounded bg-accent px-4 py-2 text-accent-ink" onClick={() => navigate('/plans')}>
           Back to plans
         </button>
       </div>
@@ -104,10 +104,10 @@ export default function SyncReviewPage() {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
         <span className="text-4xl">✅</span>
-        <h1 className="text-xl font-semibold text-slate-900">No changes detected</h1>
-        <p className="text-sm text-slate-500">"{plan.name}" already matches this file.</p>
+        <h1 className="text-xl font-semibold text-text">No changes detected</h1>
+        <p className="text-sm text-text-secondary">"{plan.name}" already matches this file.</p>
         <button
-          className="mt-2 rounded-xl bg-brand-600 px-5 py-3 font-semibold text-white"
+          className="mt-2 rounded bg-accent px-5 py-3 font-semibold text-accent-ink"
           onClick={async () => {
             await markPlanChecked(plan.id, state.sourceModifiedTime);
             navigate('/plans');
@@ -135,22 +135,22 @@ export default function SyncReviewPage() {
   return (
     <div className="flex flex-col gap-5 px-5 pt-8">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Review changes</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-semibold text-text">Review changes</h1>
+        <p className="mt-1 text-sm text-text-secondary">
           Changes found in "{plan.name}". Your logged history is never altered by a re-sync.
         </p>
       </div>
 
       {dayChanges.length > 0 && (
         <section>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Day changes</h2>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">Day changes</h2>
           <div className="flex flex-col gap-1.5">
             {dayChanges.map((d, i) => (
-              <div key={i} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+              <div key={i} className="rounded bg-bg px-3 py-2 text-sm">
                 {d.kind === 'new' ? (
-                  <span className="text-brand-700">+ New day: {d.parsedDay?.label}</span>
+                  <span className="text-accent">+ New day: {d.parsedDay?.label}</span>
                 ) : (
-                  <span className="text-slate-500">− Removed day: {d.existingDay?.label}</span>
+                  <span className="text-text-secondary">− Removed day: {d.existingDay?.label}</span>
                 )}
               </div>
             ))}
@@ -168,25 +168,25 @@ export default function SyncReviewPage() {
               const exId = m.existingExercise!.id;
               const resolved = resolutions[exId];
               return (
-                <div key={exId} className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-                  <p className="text-sm text-slate-700">
+                <div key={exId} className="rounded border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-sm text-text">
                     <span className="font-medium">{m.existingExercise!.name}</span> →{' '}
                     <span className="font-medium">{m.parsedExercise!.name}</span>
                   </p>
-                  <p className="text-xs text-slate-400">{m.dayLabel} · same exercise, renamed? or a different one?</p>
+                  <p className="text-xs text-text-secondary">{m.dayLabel} · same exercise, renamed? or a different one?</p>
                   <div className="mt-2 flex gap-2">
                     <button
                       onClick={() => setResolutions((r) => ({ ...r, [exId]: 'same' }))}
-                      className={`flex-1 rounded-lg py-2 text-xs font-semibold ${
-                        resolved === 'same' ? 'bg-brand-600 text-white' : 'border border-slate-200 bg-white text-slate-600'
+                      className={`flex-1 rounded py-2 text-xs font-semibold ${
+                        resolved === 'same' ? 'bg-accent text-accent-ink' : 'border border-border bg-card text-text-secondary'
                       }`}
                     >
                       Same exercise
                     </button>
                     <button
                       onClick={() => setResolutions((r) => ({ ...r, [exId]: 'different' }))}
-                      className={`flex-1 rounded-lg py-2 text-xs font-semibold ${
-                        resolved === 'different' ? 'bg-slate-700 text-white' : 'border border-slate-200 bg-white text-slate-600'
+                      className={`flex-1 rounded py-2 text-xs font-semibold ${
+                        resolved === 'different' ? 'bg-text text-bg' : 'border border-border bg-card text-text-secondary'
                       }`}
                     >
                       Different exercise
@@ -203,7 +203,7 @@ export default function SyncReviewPage() {
         (kind) =>
           grouped[kind].length > 0 && (
             <section key={kind}>
-              <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">
                 <span className={`rounded-full px-2 py-0.5 ${KIND_STYLE[kind]}`}>{KIND_LABEL[kind]}</span>
                 {grouped[kind].length}
               </h2>
@@ -217,24 +217,24 @@ export default function SyncReviewPage() {
       )}
 
       {unchangedCount > 0 && (
-        <p className="text-center text-xs text-slate-400">{unchangedCount} exercise{unchangedCount === 1 ? '' : 's'} unchanged</p>
+        <p className="text-center text-xs text-text-secondary">{unchangedCount} exercise{unchangedCount === 1 ? '' : 's'} unchanged</p>
       )}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-slate-800">Apply changes</h2>
+      <section className="rounded border border-border bg-card p-4">
+        <h2 className="text-sm font-semibold text-text">Apply changes</h2>
         <div className="mt-2 flex flex-col gap-2">
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+          <label className="flex items-center gap-2 text-sm text-text">
             <input type="radio" checked={timing === 'immediate'} onChange={() => setTiming('immediate')} />
             Immediately
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+          <label className="flex items-center gap-2 text-sm text-text">
             <input type="radio" checked={timing === 'next_cycle'} onChange={() => setTiming('next_cycle')} />
             From the next cycle (after you finish the current rotation)
           </label>
         </div>
       </section>
 
-      <div className="sticky bottom-20 flex flex-col gap-2 rounded-2xl bg-white/95 p-3 shadow-lg backdrop-blur">
+      <div className="sticky bottom-20 flex flex-col gap-2 rounded border border-border bg-card/95 p-3 backdrop-blur">
         {unresolvedCount > 0 && (
           <p className="text-center text-xs text-amber-600">
             Resolve {unresolvedCount} rename{unresolvedCount === 1 ? '' : 's'} above to continue
@@ -243,7 +243,7 @@ export default function SyncReviewPage() {
         <button
           disabled={saving || unresolvedCount > 0}
           onClick={handleConfirm}
-          className="rounded-xl bg-brand-600 py-3.5 text-center font-semibold text-white disabled:opacity-50"
+          className="rounded bg-accent py-3.5 text-center font-semibold text-accent-ink disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Confirm sync'}
         </button>

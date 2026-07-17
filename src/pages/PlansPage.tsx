@@ -13,7 +13,7 @@ const dateTimeFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'n
 function SyncHistory({ planId }: { planId: string }) {
   const versions = useLiveQuery(() => getPlanVersions(planId), [planId]);
   if (!versions || versions.length === 0) {
-    return <p className="px-1 text-xs text-slate-400">No sync history yet.</p>;
+    return <p className="px-1 text-xs text-text-secondary">No sync history yet.</p>;
   }
   return (
     <div className="flex flex-col gap-2">
@@ -26,8 +26,8 @@ function SyncHistory({ planId }: { planId: string }) {
           .filter(([kind]) => kind !== 'unchanged')
           .map(([kind, n]) => `${n} ${kind}`);
         return (
-          <div key={v.id} className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-            <span className="font-medium text-slate-700">{dateTimeFmt.format(v.importedAt)}</span>
+          <div key={v.id} className="rounded bg-bg px-3 py-2 text-xs text-text-secondary">
+            <span className="font-medium text-text">{dateTimeFmt.format(v.importedAt)}</span>
             {parts.length > 0 ? ` — ${parts.join(', ')}` : ' — initial import'}
           </div>
         );
@@ -85,16 +85,16 @@ function PlanCard({ plan }: { plan: Plan }) {
   };
 
   return (
-    <div className={`rounded-2xl border p-4 ${plan.isActive ? 'border-brand-300 bg-brand-50' : 'border-slate-200 bg-white'}`}>
+    <div className={`rounded border p-4 ${plan.isActive ? 'border-accent bg-accent/10' : 'border-border bg-card'}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-slate-900">{plan.name}</p>
-          <p className="text-xs text-slate-400">
+          <p className="font-semibold text-text">{plan.name}</p>
+          <p className="text-xs text-text-secondary">
             {plan.sourceType === 'drive' ? 'Google Drive' : 'File upload'} · Imported {dateFmt.format(plan.importDate)}
           </p>
         </div>
         {plan.isActive && (
-          <span className="whitespace-nowrap rounded-full bg-brand-600 px-2.5 py-1 text-xs font-semibold text-white">
+          <span className="whitespace-nowrap rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-accent-ink">
             Active
           </span>
         )}
@@ -104,7 +104,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         {!plan.isActive && (
           <button
             onClick={() => setActivePlan(plan.id)}
-            className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-700"
+            className="flex-1 rounded border border-border py-2 text-sm font-medium text-text"
           >
             Make active
           </button>
@@ -112,7 +112,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         <button
           disabled={busy}
           onClick={() => inputRef.current?.click()}
-          className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
+          className="flex-1 rounded border border-border py-2 text-sm font-medium text-text disabled:opacity-50"
         >
           Re-sync from file
         </button>
@@ -131,7 +131,7 @@ function PlanCard({ plan }: { plan: Plan }) {
           <button
             disabled={busy}
             onClick={handleCheckDrive}
-            className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
+            className="flex-1 rounded border border-border py-2 text-sm font-medium text-text disabled:opacity-50"
           >
             Check for updates
           </button>
@@ -142,15 +142,15 @@ function PlanCard({ plan }: { plan: Plan }) {
               deletePlan(plan.id);
             }
           }}
-          className="flex-1 rounded-lg border border-red-100 py-2 text-sm font-medium text-red-500"
+          className="flex-1 rounded border border-red-100 py-2 text-sm font-medium text-red-500"
         >
           Delete
         </button>
       </div>
 
-      {message && <p className="mt-2 text-xs text-slate-500">{message}</p>}
+      {message && <p className="mt-2 text-xs text-text-secondary">{message}</p>}
 
-      <button onClick={() => setShowHistory((s) => !s)} className="mt-3 text-xs font-medium text-slate-400">
+      <button onClick={() => setShowHistory((s) => !s)} className="mt-3 text-xs font-medium text-text-secondary">
         {showHistory ? 'Hide sync history ▲' : 'Sync history ▼'}
       </button>
       {showHistory && (
@@ -168,14 +168,14 @@ export default function PlansPage() {
   return (
     <div className="flex flex-col gap-5 px-5 pt-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Your plans</h1>
-        <Link to="/import" className="rounded-xl bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white">
+        <h1 className="text-2xl font-semibold text-text">Your plans</h1>
+        <Link to="/import" className="rounded bg-accent px-3.5 py-2 text-sm font-semibold text-accent-ink">
           + Import
         </Link>
       </div>
 
       {plans?.length === 0 && (
-        <p className="text-sm text-slate-500">No plans imported yet.</p>
+        <p className="text-sm text-text-secondary">No plans imported yet.</p>
       )}
 
       <div className="flex flex-col gap-2.5">

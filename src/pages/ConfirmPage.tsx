@@ -50,10 +50,10 @@ export default function ConfirmPage() {
 
   if (!state || !plan) {
     return (
-      <div className="px-5 pt-10 text-center text-slate-500">
+      <div className="px-5 pt-10 text-center text-text-secondary">
         <p>Nothing to confirm yet.</p>
         <button
-          className="mt-4 rounded-xl bg-brand-600 px-4 py-2 text-white"
+          className="mt-4 rounded bg-accent px-4 py-2 text-accent-ink"
           onClick={() => navigate('/import')}
         >
           Import a plan
@@ -194,23 +194,23 @@ export default function ConfirmPage() {
   return (
     <div className="flex flex-col gap-5 px-5 pt-8">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Confirm your plan</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-semibold text-text">Confirm your plan</h1>
+        <p className="mt-1 text-sm text-text-secondary">
           Parsing free-form docs isn't perfect — click any field below to fix it before saving.
         </p>
       </div>
 
       <div>
-        <label className="text-xs font-medium uppercase tracking-wide text-slate-400">Plan name</label>
+        <label className="text-xs font-medium uppercase tracking-wide text-text-secondary">Plan name</label>
         <input
-          className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base font-medium text-slate-900"
+          className="mt-1 w-full rounded border border-border px-3 py-2.5 text-base font-medium text-text"
           value={plan.name}
           onChange={(e) => setPlan((p) => p && { ...p, name: e.target.value })}
         />
       </div>
 
       {plan.warnings.length > 0 && (
-        <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <p className="font-medium">Heads up:</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-4">
             {plan.warnings.map((w, i) => (
@@ -243,20 +243,20 @@ export default function ConfirmPage() {
 
       <button
         onClick={addDay}
-        className="rounded-xl border border-dashed border-slate-300 py-3 text-sm font-medium text-slate-500"
+        className="rounded border border-dashed border-border py-3 text-sm font-medium text-text-secondary"
       >
         + Add day
       </button>
 
-      <div className="sticky bottom-20 flex flex-col gap-2 rounded-2xl bg-white/95 p-3 shadow-lg backdrop-blur">
-        <p className="text-center text-xs text-slate-400">
+      <div className="sticky bottom-20 flex flex-col gap-2 rounded border border-border bg-card/95 p-3 backdrop-blur">
+        <p className="text-center text-xs text-text-secondary">
           {plan.days.length} day{plan.days.length === 1 ? '' : 's'}, {totalExercises} exercise
           {totalExercises === 1 ? '' : 's'}
         </p>
         <button
           disabled={saving || totalExercises === 0}
           onClick={handleSave}
-          className="rounded-xl bg-brand-600 py-3.5 text-center font-semibold text-white disabled:opacity-50"
+          className="rounded bg-accent py-3.5 text-center font-semibold text-accent-ink disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save plan'}
         </button>
