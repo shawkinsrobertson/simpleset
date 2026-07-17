@@ -166,13 +166,13 @@ export default function DayBlock({
         <div className="mt-1 flex gap-1.5">
           <button
             onClick={onDuplicateDay}
-            className="rounded border border-border bg-card px-2 py-1 text-xs font-medium text-text-secondary"
+            className="btn-secondary px-2 py-1 text-xs"
           >
             Duplicate
           </button>
           <button
             onClick={() => setRepeatPromptOpen(true)}
-            className="rounded border border-border bg-card px-2 py-1 text-xs font-medium text-text-secondary"
+            className="btn-secondary px-2 py-1 text-xs"
           >
             Repeat…
           </button>
@@ -259,7 +259,7 @@ export default function DayBlock({
                   selectedGroupIds.forEach((gid) => onUngroup(gid));
                   cancelSelection();
                 }}
-                className="rounded border border-border px-2.5 py-1.5 text-xs font-medium text-text-secondary"
+                className="btn-secondary px-2.5 py-1.5 text-xs"
               >
                 Ungroup
               </button>
@@ -280,7 +280,7 @@ export default function DayBlock({
                 onGroupExercises([...selected], 'superset');
                 cancelSelection();
               }}
-              className="rounded bg-accent px-2.5 py-1.5 text-xs font-medium text-accent-ink disabled:opacity-40"
+              className="btn-primary px-2.5 py-1.5 text-xs disabled:opacity-40"
             >
               Superset
             </button>
@@ -314,7 +314,7 @@ export default function DayBlock({
               onRepeatDay(repeatWeeks);
               setRepeatPromptOpen(false);
             }}
-            className="mt-4 w-full rounded bg-accent py-3 text-center font-semibold text-accent-ink"
+            className="btn-primary mt-4 w-full py-3"
           >
             Add {repeatWeeks} week{repeatWeeks === 1 ? '' : 's'}
           </button>

@@ -41,7 +41,7 @@ export default function PlanPage() {
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
         <span className="text-4xl">📋</span>
         <h1 className="text-xl font-semibold text-text">No plan yet</h1>
-        <Link to="/import" className="mt-2 rounded bg-accent px-5 py-3 font-semibold text-accent-ink">
+        <Link to="/import" className="btn-primary mt-2 px-5 py-3">
           Import a plan
         </Link>
       </div>
@@ -115,7 +115,7 @@ export default function PlanPage() {
                   <div className="mt-1 flex gap-2">
                     <button
                       onClick={() => duplicateDayInDb(plan.id, day.id)}
-                      className="flex-1 rounded border border-border py-2 text-xs font-medium text-text-secondary"
+                      className="btn-secondary flex-1 py-2 text-xs"
                     >
                       Duplicate day
                     </button>
@@ -124,7 +124,7 @@ export default function PlanPage() {
                         setRepeatDayId(day.id);
                         setRepeatWeeks(1);
                       }}
-                      className="flex-1 rounded border border-border py-2 text-xs font-medium text-text-secondary"
+                      className="btn-secondary flex-1 py-2 text-xs"
                     >
                       Repeat across weeks…
                     </button>
@@ -166,7 +166,7 @@ export default function PlanPage() {
               await repeatDayInDb(plan.id, repeatDay.id, repeatWeeks);
               setRepeatDayId(null);
             }}
-            className="mt-4 w-full rounded bg-accent py-3 text-center font-semibold text-accent-ink"
+            className="btn-primary mt-4 w-full py-3"
           >
             Add {repeatWeeks} week{repeatWeeks === 1 ? '' : 's'}
           </button>

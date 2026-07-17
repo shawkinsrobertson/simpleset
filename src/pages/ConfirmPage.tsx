@@ -53,7 +53,7 @@ export default function ConfirmPage() {
       <div className="px-5 pt-10 text-center text-text-secondary">
         <p>Nothing to confirm yet.</p>
         <button
-          className="mt-4 rounded bg-accent px-4 py-2 text-accent-ink"
+          className="btn-primary mt-4 px-4 py-2"
           onClick={() => navigate('/import')}
         >
           Import a plan
@@ -307,7 +307,7 @@ export default function ConfirmPage() {
         <button
           disabled={saving || totalExercises === 0}
           onClick={handleSave}
-          className="rounded bg-accent py-3.5 text-center font-semibold text-accent-ink disabled:opacity-50"
+          className="btn-primary w-full py-3.5"
         >
           {saving ? 'Saving…' : 'Save plan'}
         </button>

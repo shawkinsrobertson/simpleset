@@ -27,7 +27,7 @@ export default function DriveImportPage() {
         </p>
         <button
           onClick={() => navigate('/import')}
-          className="mt-2 rounded bg-accent px-5 py-3 font-semibold text-accent-ink"
+          className="btn-primary mt-2 px-5 py-3"
         >
           Back to import
         </button>
@@ -99,7 +99,7 @@ export default function DriveImportPage() {
         <button
           onClick={connect}
           disabled={loading}
-          className="rounded bg-accent py-3.5 font-semibold text-accent-ink disabled:opacity-50"
+          className="btn-primary w-full py-3.5"
         >
           {loading ? 'Connecting…' : 'Connect Google Drive'}
         </button>

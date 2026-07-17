@@ -104,7 +104,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         {!plan.isActive && (
           <button
             onClick={() => setActivePlan(plan.id)}
-            className="flex-1 rounded border border-border py-2 text-sm font-medium text-text"
+            className="btn-secondary flex-1 py-2 text-sm"
           >
             Make active
           </button>
@@ -112,7 +112,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         <button
           disabled={busy}
           onClick={() => inputRef.current?.click()}
-          className="flex-1 rounded border border-border py-2 text-sm font-medium text-text disabled:opacity-50"
+          className="btn-secondary flex-1 py-2 text-sm disabled:opacity-50"
         >
           Re-sync from file
         </button>
@@ -131,7 +131,7 @@ function PlanCard({ plan }: { plan: Plan }) {
           <button
             disabled={busy}
             onClick={handleCheckDrive}
-            className="flex-1 rounded border border-border py-2 text-sm font-medium text-text disabled:opacity-50"
+            className="btn-secondary flex-1 py-2 text-sm disabled:opacity-50"
           >
             Check for updates
           </button>

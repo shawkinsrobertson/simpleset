@@ -48,7 +48,7 @@ export default function LoggingPage() {
     return (
       <div className="px-5 pt-10 text-center text-text-secondary">
         <p>No active workout to log against.</p>
-        <button onClick={() => navigate('/today')} className="mt-4 rounded bg-accent px-4 py-2 text-accent-ink">
+        <button onClick={() => navigate('/today')} className="btn-primary mt-4 px-4 py-2">
           Back to today
         </button>
       </div>
@@ -144,7 +144,7 @@ export default function LoggingPage() {
             )}
             <button
               onClick={handleLog}
-              className="mt-4 w-full rounded bg-accent py-3 text-center font-semibold text-accent-ink active:opacity-90"
+              className="btn-primary mt-4 w-full py-3"
             >
               Log set {doneCount + 1}
             </button>
@@ -164,7 +164,7 @@ export default function LoggingPage() {
         {isDone && (
           <div className="flex flex-col items-center gap-3 rounded border border-border bg-card p-6 text-center">
             <p className="text-sm font-semibold text-text">All sets done ✓</p>
-            <button onClick={() => navigate('/today')} className="rounded bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">
+            <button onClick={() => navigate('/today')} className="btn-primary px-4 py-2 text-sm">
               Back to day
             </button>
           </div>

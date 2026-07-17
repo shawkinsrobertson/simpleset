@@ -121,7 +121,7 @@ export default function ImportPage() {
 
       <button
         onClick={() => navigate('/import/drive')}
-        className="flex items-center justify-center gap-2 rounded border border-border bg-card px-6 py-4 font-medium text-text"
+        className="btn-secondary flex items-center justify-center gap-2 w-full px-6 py-4"
       >
         <span className="text-lg">🔗</span> Connect Google Drive
       </button>

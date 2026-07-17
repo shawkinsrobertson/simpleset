@@ -87,7 +87,7 @@ export default function SyncReviewPage() {
     return (
       <div className="px-5 pt-10 text-center text-text-secondary">
         <p>Nothing to review.</p>
-        <button className="mt-4 rounded bg-accent px-4 py-2 text-accent-ink" onClick={() => navigate('/plans')}>
+        <button className="btn-primary mt-4 px-4 py-2" onClick={() => navigate('/plans')}>
           Back to plans
         </button>
       </div>
@@ -107,7 +107,7 @@ export default function SyncReviewPage() {
         <h1 className="text-xl font-semibold text-text">No changes detected</h1>
         <p className="text-sm text-text-secondary">"{plan.name}" already matches this file.</p>
         <button
-          className="mt-2 rounded bg-accent px-5 py-3 font-semibold text-accent-ink"
+          className="btn-primary mt-2 px-5 py-3"
           onClick={async () => {
             await markPlanChecked(plan.id, state.sourceModifiedTime);
             navigate('/plans');
@@ -243,7 +243,7 @@ export default function SyncReviewPage() {
         <button
           disabled={saving || unresolvedCount > 0}
           onClick={handleConfirm}
-          className="rounded bg-accent py-3.5 text-center font-semibold text-accent-ink disabled:opacity-50"
+          className="btn-primary w-full py-3.5"
         >
           {saving ? 'Saving…' : 'Confirm sync'}
         </button>

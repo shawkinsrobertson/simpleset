@@ -110,6 +110,41 @@ body {
 }
 
 /*
+ * Button component classes — base style from the design system.
+ * Sizing (py-*, px-*, w-full, text-sm, etc.) is still applied via Tailwind
+ * utilities at the call site so individual buttons can adjust without forks.
+ */
+@layer components {
+  .btn-primary {
+    background-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 0 rgba(0, 0, 0, 0.35);
+    transition: opacity 0.1s ease;
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn-primary:hover:not(:disabled) { opacity: 0.92; }
+  .btn-primary:active:not(:disabled) { opacity: 0.82; }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-secondary {
+    background-color: var(--card);
+    color: var(--text);
+    font-weight: 500;
+    border-radius: var(--radius);
+    border: var(--border-width) solid var(--border);
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 0 var(--border);
+    transition: opacity 0.1s ease;
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn-secondary:hover:not(:disabled) { opacity: 0.8; }
+  .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+/*
  * Offset accent drop-shadow — the signature SimpleSet card treatment.
  * Uses --shadow-offset (2px soft / 6px high-contrast) so it automatically
  * scales with the contrast setting. No blur, solid accent color.
