@@ -85,7 +85,7 @@ function PlanCard({ plan }: { plan: Plan }) {
   };
 
   return (
-    <div className={`card-lift rounded border p-4 ${plan.isActive ? 'border-accent bg-accent/10' : 'border-border bg-card'}`}>
+    <div className={`card-lift border p-4 ${plan.isActive ? 'border-accent bg-accent/10' : 'border-border bg-card'}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-semibold text-text">{plan.name}</p>
@@ -169,7 +169,7 @@ export default function PlansPage() {
     <div className="flex flex-col gap-5 px-5 pt-8">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold text-text">Your plans</h1>
-        <Link to="/import" className="rounded bg-accent px-3.5 py-2 text-sm font-semibold text-accent-ink">
+        <Link to="/import" className="btn-primary px-3.5 py-2 text-sm">
           + Import
         </Link>
       </div>

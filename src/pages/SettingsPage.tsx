@@ -18,7 +18,7 @@ export default function SettingsPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Display</h2>
 
-        <div className="rounded border border-border bg-card p-4">
+        <div className="border border-border bg-card p-4">
           <p className="text-sm font-medium text-text">Color mode</p>
           <div className="mt-2 flex gap-2">
             {MODES.map((m) => (
@@ -26,8 +26,8 @@ export default function SettingsPage() {
                 key={m.value}
                 onClick={() => setMode(m.value)}
                 className={clsx(
-                  'flex-1 rounded border py-2 text-sm font-medium',
-                  mode === m.value ? 'border-accent bg-accent text-accent-ink' : 'border-border bg-transparent text-text-secondary',
+                  'flex-1 py-2 text-sm',
+                  mode === m.value ? 'btn-primary' : 'btn-secondary',
                 )}
               >
                 {m.label}
@@ -38,7 +38,7 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setContrast(contrast === 'high' ? 'soft' : 'high')}
-          className="flex items-center justify-between rounded border border-border bg-card p-4 text-left"
+          className="flex items-center justify-between border border-border bg-card p-4 text-left w-full"
         >
           <div>
             <p className="text-sm font-medium text-text">Increase contrast</p>
