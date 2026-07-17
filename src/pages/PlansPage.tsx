@@ -168,7 +168,7 @@ export default function PlansPage() {
   return (
     <div className="flex flex-col gap-5 px-5 pt-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-text">Your plans</h1>
+        <h1 className="font-display text-2xl font-semibold text-text">Your plans</h1>
         <Link to="/import" className="rounded bg-accent px-3.5 py-2 text-sm font-semibold text-accent-ink">
           + Import
         </Link>

@@ -29,3 +29,7 @@ waitForPort = 5173
 [[ports]]
 localPort = 5173
 externalPort = 80
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 60000

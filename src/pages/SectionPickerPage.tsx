@@ -74,7 +74,7 @@ export default function SectionPickerPage() {
     <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 56px)' }}>
       {/* Header */}
       <div className="px-5 pt-8 pb-4">
-        <h1 className="text-2xl font-semibold text-text">Select sections</h1>
+        <h1 className="font-display text-2xl font-semibold text-text">Select sections</h1>
         <p className="mt-1 text-sm text-text-secondary">
           We found {sections.length} section{sections.length === 1 ? '' : 's'}.
           Intro and nutrition pages are unchecked — tap to include anything you want.

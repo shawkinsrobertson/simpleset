@@ -244,7 +244,7 @@ export default function ConfirmPage() {
   return (
     <div className="flex flex-col gap-5 px-5 pt-8">
       <div>
-        <h1 className="text-2xl font-semibold text-text">Confirm your plan</h1>
+        <h1 className="font-display text-2xl font-semibold text-text">Confirm your plan</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Parsing free-form docs isn't perfect — click any field below to fix it before saving.
         </p>
@@ -260,7 +260,7 @@ export default function ConfirmPage() {
       </div>
 
       {plan.warnings.length > 0 && (
-        <div className="rounded bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500 dark:bg-amber-900/20 dark:text-amber-200">
           <p className="font-medium">Heads up:</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-4">
             {plan.warnings.map((w, i) => (
