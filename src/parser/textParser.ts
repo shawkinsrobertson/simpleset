@@ -23,36 +23,49 @@ const DAY_RE = /^day\s*(\d+)\b\s*[:\-–]?\s*(.*)$/i;
 const CALENDAR_DATE_RE =
   /^(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*,?\s*\d{4})?\b/i;
 
-// "3x8", "3 x 8-10", "3 sets of 8", each optionally followed by a weight —
-// either with an explicit separator ("x 135", "@ 135") or, when there's no
-// separator token, a number that carries its own unit ("135lb") so it isn't
-// confused with a stray trailing number.
-const SET_REP_WEIGHT_RE =
-  /(?<sets>\d+)\s*(?:x|×|sets?\s+of)\s*(?<reps>\d+(?:\s*-\s*\d+)?|amrap|max(?:imum)?)\s*(?:reps?)?(?:\s*(?:(?:x|×|@|at)\s*(?<weightA>\d+(?:[.,]\d+)?)\s*(?<unitA>lbs?|kgs?|kg|%)?|(?<weightB>\d+(?:[.,]\d+)?)\s*(?<unitB>lbs?|kgs?|kg|%)))?/i;
+// Rep target alternatives used in SET_REP_WEIGHT_RE and REPS_KEYWORD_RE.
+// "to failure" is listed before plain "failure" so the `to` is consumed.
+const REP_TARGET = '(?:\\d+(?:\\s*-\\s*\\d+)?|amrap|to\\s+failure|failure|max(?:imum)?)';
 
-// "3x30s", "3 x 45 sec" — a sets multiplier over a duration instead of reps.
-// The unit is mandatory here specifically so this doesn't also fire on
-// plain rep counts like "3x8" (handled by SET_REP_WEIGHT_RE instead); tried
-// before that pattern so "3x30s" isn't misread as 30 reps with a stray "s".
+// Sets connector: "x", "×", "sets of", "sets x", "sets ×"
+// Handles "3x8", "3 sets x 8 reps", "3 sets of 8", etc.
+const SETS_CONNECTOR = '(?:x|×|sets?\\s+(?:of|x|×))';
+
+// "3x8", "3 x 8-10", "3 sets of 8", "3 sets x 8 reps", "3x AMRAP",
+// "3 sets x failure" — each optionally followed by a weight.
+// Uses [.,] for the decimal separator so international weight formats
+// like "60,5 kg" are handled alongside "60.5 kg".
+const SET_REP_WEIGHT_RE = new RegExp(
+  `(?<sets>\\d+)\\s*${SETS_CONNECTOR}\\s*(?<reps>${REP_TARGET})\\s*(?:reps?)?` +
+    `(?:\\s*(?:(?:x|×|@|at)\\s*(?<weightA>\\d+(?:[.,]\\d+)?)\\s*(?<unitA>lbs?|kgs?|kg|%)?` +
+    `|(?<weightB>\\d+(?:[.,]\\d+)?)\\s*(?<unitB>lbs?|kgs?|kg|%)))?`,
+  'i',
+);
+
+// "3x30s", "3 x 45 sec", "3 sets x 45 sec" — a sets multiplier over a
+// duration instead of reps.  The unit is mandatory so this doesn't also fire
+// on plain rep counts like "3x8" (handled by SET_REP_WEIGHT_RE instead); it
+// must run first so "3x30s" isn't misread as 30 reps with a stray "s".
 const SETS_TIME_RE = new RegExp(
-  `(?<sets>\\d+)\\s*(?:x|×|sets?\\s+of)\\s*(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT_FRAGMENT})\\b`,
+  `(?<sets>\\d+)\\s*${SETS_CONNECTOR}\\s*(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT_FRAGMENT})\\b`,
   'i',
 );
 
 // A bare duration with no sets multiplier — "Plank 45s", "Wall Sit 1min".
 const TIME_ONLY_RE = new RegExp(`(?<time>\\d+(?:\\.\\d+)?)\\s*(?<timeUnit>${TIME_UNIT_FRAGMENT})\\b(?:\\s*hold)?`, 'i');
 
-// A rest prescription mentioned inline — "30s rest", "rest 90s", "rest: 2min".
-const REST_RE = new RegExp(
-  `(?:^|[\\s,;])(?:(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT_FRAGMENT})\\s*rest\\b|rest\\s*(?:of|for)?\\s*:?\\s*(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT_FRAGMENT}))`,
-  'i',
-);
-
 // "x10", "x 8-10", "x8/leg" — reps-only with no preceding sets count.
 // \bx requires a word boundary so it doesn't fire on the "x" inside "3x8"
 // (where "3" and "x" are both \w with no boundary between them).
 const REPS_ONLY_RE =
   /\bx\s*(?<reps>\d+(?:\s*-\s*\d+)?)\s*(?:reps?)?\b(?:\s*\/\s*(?<side>leg|side|arm|hand))?/i;
+
+// Standalone "8-10 reps", "AMRAP", "failure", "to failure" without a sets
+// multiplier.  Tried after REPS_ONLY_RE so "x8" is captured whole first.
+const REPS_KEYWORD_RE = new RegExp(
+  `(?<reps>${REP_TARGET})\\s*reps?|(?<keyword>amrap|to\\s+failure|failure)`,
+  'i',
+);
 
 // "Exercise Name: 5 reps", "Name: 4-5 reps", "Name: 3 rounds",
 // "Sandbag Carries: 30 meters", "Farmer's Walk: 25m" — colon-separated count
@@ -63,6 +76,23 @@ const COLON_COUNT_RE =
 
 const DISTANCE_UNIT_RE = /^(meters?|m|km|feet?|ft|yards?|yd)$/i;
 
+// A rest prescription mentioned inline — "30s rest", "rest 90s", "rest: 2min",
+// "w/ 90s rest", "with 2min rest", "rest between sets: 3min".
+const REST_RE = new RegExp(
+  `(?:^|[\\s,;/])(?:w(?:ith)?\\s+)?(?:(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT_FRAGMENT})\\s*rest\\b` +
+    `|rest\\s*(?:(?:between\\s+\\w+)?\\s*:?|of|for)\\s*:?\\s*(\\d+(?:\\.\\d+)?)\\s*(${TIME_UNIT_FRAGMENT}))`,
+  'i',
+);
+
+/** Normalises a raw rep string: collapses dash spacing, strips "to " prefix, lowercases. */
+function normaliseReps(raw: string): string {
+  return raw
+    .replace(/\s*-\s*/, '-')
+    .replace(/^to\s+/i, '')
+    .toLowerCase()
+    .trim();
+}
+
 /** Pulls an inline rest mention ("...,  30s rest") out of trailing/notes text, if present. */
 function extractRest(text: string): { rest: string | null; remaining: string } {
   if (!text) return { rest: null, remaining: text };
@@ -71,7 +101,7 @@ function extractRest(text: string): { rest: string | null; remaining: string } {
   const value = m[1] ?? m[3];
   const unit = m[2] ?? m[4];
   const remaining = (text.slice(0, m.index) + text.slice(m.index + m[0].length))
-    .replace(/^[\s,;]+|[\s,;]+$/g, '')
+    .replace(/^[\s,;/]+|[\s,;/]+$/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
   return { rest: formatTime(value, unit), remaining };
@@ -112,10 +142,6 @@ function stripMarkdown(line: string): string {
  * Also handles the PDF-column-spacing artefact "1: 30" (space after colon).
  */
 function normalizeMMSS(line: string): string {
-  // Convert single-digit-minute MM:SS to total seconds (or whole minutes when
-  // it divides evenly) so TIME_UNIT_FRAGMENT can match the result cleanly.
-  // e.g. "1:30" → "90s", "2:00" → "2min", "1:15" → "75s"
-  // Two-digit patterns ("30:30", "45:15") are interval notation — left unchanged.
   return line.replace(/\b([0-9])\s*:\s*(\d{2})\b/g, (_, min, sec) => {
     const totalSecs = parseInt(min, 10) * 60 + parseInt(sec, 10);
     return totalSecs % 60 === 0 ? `${totalSecs / 60}min` : `${totalSecs}s`;
@@ -154,6 +180,17 @@ export function normalizeLine(raw: string): string {
   return normalizeDashes(normalizeMMSS(stripMarkdown(stripInvisibleChars(raw))));
 }
 
+/** True if the line carries any recognizable target (reps, weight, or a duration). */
+export function looksLikeTargetLine(line: string): boolean {
+  return (
+    SET_REP_WEIGHT_RE.test(line) ||
+    SETS_TIME_RE.test(line) ||
+    TIME_ONLY_RE.test(line) ||
+    REPS_ONLY_RE.test(line) ||
+    /\b(amrap|failure)\b/i.test(line)
+  );
+}
+
 /**
  * Exported for use by the section scanner.
  * True when the normalised line reads like a day/week/section header —
@@ -174,11 +211,6 @@ export function looksLikeHeadingLine(line: string): boolean {
 /** Exported for use by the section scanner. */
 export function stripBulletExport(line: string): string {
   return stripBullet(line);
-}
-
-/** True if the line carries any recognizable target (reps, weight, or a duration). */
-export function looksLikeTargetLine(line: string): boolean {
-  return SET_REP_WEIGHT_RE.test(line) || SETS_TIME_RE.test(line) || TIME_ONLY_RE.test(line) || REPS_ONLY_RE.test(line);
 }
 
 function looksLikeHeaderFallback(line: string): boolean {
@@ -233,11 +265,10 @@ function parseExerciseLine(rawLine: string): ParsedExercise | null {
   const line = stripBullet(normalizeLine(rawLine));
   if (!line) return null;
 
-  // "3x30s" — sets x a duration instead of reps. Tried before the reps
-  // pattern below: the unit is mandatory here, so it only matches when a
-  // time unit is actually present, but it still has to go first or
-  // SET_REP_WEIGHT_RE would greedily read "30" as reps and leave a stray
-  // "s" dangling.
+  // "3x30s", "3 sets x 45 sec" — sets x a duration instead of reps. Tried
+  // first: the time unit is mandatory here so it only matches real durations,
+  // but it still has to precede SET_REP_WEIGHT_RE or "3x30s" would be misread
+  // as 30 reps with a stray "s".
   const setsTimeMatch = SETS_TIME_RE.exec(line);
   if (setsTimeMatch) {
     const g = setsTimeMatch.groups!;
@@ -253,7 +284,7 @@ function parseExerciseLine(rawLine: string): ParsedExercise | null {
     };
   }
 
-  // "3x8 135lb" — sets x reps, optionally with a weight.
+  // "3x8 135lb", "3 sets x 8 reps", "3 sets of AMRAP", "3x failure", etc.
   const repMatch = SET_REP_WEIGHT_RE.exec(line);
   if (repMatch) {
     const g = repMatch.groups!;
@@ -265,7 +296,7 @@ function parseExerciseLine(rawLine: string): ParsedExercise | null {
       ...baseExercise(rawLine),
       name: name || '(unnamed exercise)',
       targetSets: Number(g.sets),
-      targetReps: g.reps.replace(/\s*-\s*/, '-').toLowerCase(),
+      targetReps: normaliseReps(g.reps),
       targetWeight: weight ? `${weight}${unit ? unit.toLowerCase() : ''}` : null,
       targetRest: rest,
       notes: remaining || null,
@@ -303,6 +334,23 @@ function parseExerciseLine(rawLine: string): ParsedExercise | null {
       targetReps: reps,
       targetRest: rest,
       notes,
+    };
+  }
+
+  // "Pull Ups 8-10 reps", "Burpees AMRAP", "Dips failure" — standalone reps
+  // keyword or AMRAP/failure without a sets multiplier.
+  const repsKeywordMatch = REPS_KEYWORD_RE.exec(line);
+  if (repsKeywordMatch) {
+    const g = repsKeywordMatch.groups!;
+    const rawReps = g.reps ?? g.keyword;
+    const { name, trailing } = splitNameAndTrailing(line, repsKeywordMatch.index, repsKeywordMatch[0].length);
+    const { rest, remaining } = extractRest(trailing);
+    return {
+      ...baseExercise(rawLine),
+      name: name || '(unnamed exercise)',
+      targetReps: normaliseReps(rawReps),
+      targetRest: rest,
+      notes: remaining || null,
     };
   }
 
@@ -365,7 +413,14 @@ export function parsePlanText(text: string, fallbackName: string): ParsedPlan {
 
     // First non-empty line, if it doesn't look like a day/week/exercise line,
     // is treated as the plan's title.
-    if (i === 0 && !WEEK_RE.test(line) && !DAY_RE.test(line) && !WEEKDAY_RE.test(line) && !CALENDAR_DATE_RE.test(line) && !looksLikeTargetLine(line)) {
+    if (
+      i === 0 &&
+      !WEEK_RE.test(line) &&
+      !DAY_RE.test(line) &&
+      !WEEKDAY_RE.test(line) &&
+      !CALENDAR_DATE_RE.test(line) &&
+      !looksLikeTargetLine(line)
+    ) {
       planName = line;
       continue;
     }

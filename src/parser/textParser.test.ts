@@ -205,4 +205,151 @@ Squat Hold 3x30s
     expect(plan.days[0].exercises[0].targetReps).toBeNull();
     expect(plan.days[0].exercises[0].targetTime).toBe('30s');
   });
+
+  // ---- New format coverage ----
+
+  it('parses "3 sets x 8 reps" verbose notation', () => {
+    const text = `
+Day 1
+Bench Press 3 sets x 8 reps 135lb
+Squat 4 sets x 5 reps 185lb
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Bench Press',
+      targetSets: 3,
+      targetReps: '8',
+      targetWeight: '135lb',
+    });
+    expect(plan.days[0].exercises[1]).toMatchObject({
+      name: 'Squat',
+      targetSets: 4,
+      targetReps: '5',
+      targetWeight: '185lb',
+    });
+  });
+
+  it('parses "3 sets of 8-10 reps" verbose notation with rep range', () => {
+    const text = `
+Day 1
+Romanian Deadlift 3 sets of 8-10 reps 95lb
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Romanian Deadlift',
+      targetSets: 3,
+      targetReps: '8-10',
+      targetWeight: '95lb',
+    });
+  });
+
+  it('parses "failure" and "to failure" as rep targets', () => {
+    const text = `
+Day 1
+Pull Ups 3x failure
+Push Ups 2 sets x to failure
+Dips 3 sets of failure
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Pull Ups',
+      targetSets: 3,
+      targetReps: 'failure',
+    });
+    expect(plan.days[0].exercises[1]).toMatchObject({
+      name: 'Push Ups',
+      targetSets: 2,
+      targetReps: 'failure',
+    });
+    expect(plan.days[0].exercises[2]).toMatchObject({
+      name: 'Dips',
+      targetSets: 3,
+      targetReps: 'failure',
+    });
+  });
+
+  it('parses standalone AMRAP without sets multiplier', () => {
+    const text = `
+Day 1
+Burpees AMRAP
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Burpees',
+      targetSets: null,
+      targetReps: 'amrap',
+    });
+  });
+
+  it('parses "8-10 reps" standalone (reps-only line, no sets)', () => {
+    const text = `
+Day 1
+Chin Ups 8-10 reps
+Leg Raise 15 reps
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Chin Ups',
+      targetSets: null,
+      targetReps: '8-10',
+    });
+    expect(plan.days[0].exercises[1]).toMatchObject({
+      name: 'Leg Raise',
+      targetSets: null,
+      targetReps: '15',
+    });
+  });
+
+  it('parses AMRAP with a sets multiplier', () => {
+    const text = `
+Day 1
+Kettlebell Swings 3 x AMRAP
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Kettlebell Swings',
+      targetSets: 3,
+      targetReps: 'amrap',
+    });
+  });
+
+  it('handles "rest between sets" rest format', () => {
+    const text = `
+Day 1
+Squat 5x5 225lb, rest between sets: 3min
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Squat',
+      targetSets: 5,
+      targetReps: '5',
+      targetWeight: '225lb',
+      targetRest: '3min',
+    });
+  });
+
+  it('handles "w/ Xs rest" rest format', () => {
+    const text = `
+Day 1
+Bench Press 4x6 185lb w/ 90s rest
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Bench Press',
+      targetRest: '90s',
+    });
+  });
+
+  it('normalises rep strings — strips extra whitespace around range dash', () => {
+    const text = `
+Day 1
+Cable Row 3 x 10 - 12
+`;
+    const plan = parsePlanText(text, 'fallback');
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      name: 'Cable Row',
+      targetSets: 3,
+      targetReps: '10-12',
+    });
+  });
 });

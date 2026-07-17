@@ -3,16 +3,49 @@ import type { ParsedDay, ParsedExercise, ParsedPlan } from './types';
 import { parsePlanText } from './textParser';
 
 const HEADER_ALIASES: Record<string, string[]> = {
-  week: ['week', 'wk'],
-  day: ['day', 'session', 'workout'],
-  exercise: ['exercise', 'movement', 'lift'],
-  sets: ['sets', 'set'],
-  reps: ['reps', 'rep'],
-  weight: ['weight', 'load', 'lbs', 'kg'],
-  time: ['time', 'duration', 'hold'],
-  rest: ['rest', 'rest time'],
-  notes: ['notes', 'note', 'comments', 'rpe'],
+  week: ['week', 'wk', 'week #', 'week number'],
+  day: ['day', 'session', 'workout', 'day #', 'day number', 'training day'],
+  exercise: ['exercise', 'movement', 'lift', 'name', 'exercise name', 'movement name', 'exercise/movement', 'lift name'],
+  sets: ['sets', 'set', '# sets', 'num sets', 'number of sets', 'total sets'],
+  reps: ['reps', 'rep', 'reps/set', 'rep range', 'reps per set', 'repetitions'],
+  weight: ['weight', 'load', 'lbs', 'kg', 'weight (lbs)', 'weight (kg)', 'load (lbs)', 'load (kg)', 'weight/load', 'intensity'],
+  time: ['time', 'duration', 'hold', 'time (s)', 'time (sec)', 'duration (s)', 'seconds', 'time under tension'],
+  rest: ['rest', 'rest time', 'rest (s)', 'rest (sec)', 'rest period', 'recovery', 'rest between sets'],
+  notes: ['notes', 'note', 'comments', 'comment', 'rpe', 'coaching notes', 'cues', 'instructions', 'tempo'],
 };
+
+/**
+ * Normalise a spreadsheet cell value that represents a number of sets,
+ * stripping common verbose suffixes ("3 sets" → "3").
+ */
+function normaliseSetsCell(raw: string): string {
+  return raw.replace(/\s*sets?\b.*/i, '').trim();
+}
+
+/**
+ * Normalise a spreadsheet cell value that represents reps, stripping
+ * verbose suffixes so the confirm screen shows clean values.
+ * "8-10 reps" → "8-10", "3 sets x 8 reps" → "8", "AMRAP" → "amrap".
+ */
+function normaliseRepsCell(raw: string): string {
+  // "N sets x M reps" or "N sets of M reps" — extract M
+  const setsRepsMatch = /\d+\s*(?:sets?\s+(?:of|x|×))\s*(\S+)\s*(?:reps?)?/i.exec(raw);
+  if (setsRepsMatch) return setsRepsMatch[1].toLowerCase().replace(/\s*-\s*/, '-');
+  // Strip trailing "reps?" suffix
+  return raw.replace(/\s*reps?\b/i, '').replace(/^to\s+/i, '').trim() || raw.trim();
+}
+
+/**
+ * Normalise a weight cell: "135 lbs" → "135lb", "60kg" → "60kg".
+ * Returns the raw string unchanged when no unit is found (numeric-only
+ * values are kept as-is so the confirm screen shows them).
+ */
+function normaliseWeightCell(raw: string): string {
+  const m = /^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|%)?$/i.exec(raw.trim());
+  if (!m) return raw.trim();
+  const unit = m[2] ? m[2].toLowerCase().replace(/^lbs$/, 'lb').replace(/^kgs$/, 'kg') : '';
+  return `${m[1]}${unit}`;
+}
 
 function detectColumns(headerRow: unknown[]): Record<string, number> | null {
   const cols: Record<string, number> = {};
@@ -20,8 +53,14 @@ function detectColumns(headerRow: unknown[]): Record<string, number> | null {
     const val = String(cell ?? '').trim().toLowerCase();
     if (!val) return;
     for (const [key, aliases] of Object.entries(HEADER_ALIASES)) {
-      if (aliases.some((a) => val === a || val.startsWith(a))) {
-        if (!(key in cols)) cols[key] = idx;
+      if (key in cols) continue; // first match wins
+      if (aliases.some((a) => val === a || val.startsWith(a + ' ') || val.startsWith(a + '/'))) {
+        cols[key] = idx;
+        return;
+      }
+      // Looser: column header contains the alias (e.g. "exercise name" contains "exercise")
+      if (aliases.some((a) => a.length >= 4 && val.includes(a))) {
+        cols[key] = idx;
       }
     }
   });
@@ -59,21 +98,25 @@ function parseStructuredSheet(rows: unknown[][], cols: Record<string, number>): 
       lastDayLabel = dayVal;
     }
 
-    const setsVal = get('sets');
-    const repsVal = get('reps');
-    const weightVal = get('weight');
-    const timeVal = get('time');
-    const restVal = get('rest');
+    const rawSets = get('sets');
+    const rawReps = get('reps');
+    const rawWeight = get('weight');
+    const rawTime = get('time');
+    const rawRest = get('rest');
     const notesVal = get('notes');
+
+    const normSets = rawSets ? normaliseSetsCell(rawSets) : '';
+    const normReps = rawReps ? normaliseRepsCell(rawReps) : '';
+    const normWeight = rawWeight ? normaliseWeightCell(rawWeight) : '';
 
     const exercise: ParsedExercise = {
       tempId: crypto.randomUUID(),
       name: exerciseName,
-      targetSets: setsVal ? Number(setsVal) || null : null,
-      targetReps: repsVal || null,
-      targetWeight: weightVal || null,
-      targetTime: timeVal || null,
-      targetRest: restVal || null,
+      targetSets: normSets ? Number(normSets) || null : null,
+      targetReps: normReps || null,
+      targetWeight: normWeight || null,
+      targetTime: rawTime || null,
+      targetRest: rawRest || null,
       notes: notesVal || null,
       groupTempId: null,
       raw: row.map((c) => String(c ?? '')).join(' | '),
