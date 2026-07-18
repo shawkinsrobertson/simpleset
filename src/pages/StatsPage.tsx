@@ -83,11 +83,9 @@ export default function StatsPage() {
       </div>
 
       <section>
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">Consistency</h2>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">Last 8 weeks</h2>
         {grid && grid.some((w) => w.some((d) => d.completed)) ? (
-          <Card className="p-3">
-            <ConsistencyGrid weeks={grid} />
-          </Card>
+          <ConsistencyGrid weeks={grid} />
         ) : (
           <p className="text-sm text-text-secondary">Complete a workout to start building your streak.</p>
         )}

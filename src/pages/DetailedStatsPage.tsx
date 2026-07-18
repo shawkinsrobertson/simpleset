@@ -22,9 +22,6 @@ const RANGES: { value: StatsRange; label: string }[] = [
   { value: 'all', label: 'All time' },
 ];
 
-/** Grid width available inside the mobile-width shell, minus card padding — used to shrink cells instead of scrolling. */
-const GRID_WIDTH_PX = 330;
-
 export default function DetailedStatsPage() {
   const { loading: planLoading, plan } = useActivePlan();
   const [range, setRange] = useState<StatsRange>('3m');
@@ -50,7 +47,6 @@ export default function DetailedStatsPage() {
   if (!plan) return null;
 
   const totalVolume = (volume ?? []).reduce((sum, v) => sum + v.volume, 0);
-  const cellSize = Math.max(3, Math.floor(GRID_WIDTH_PX / weeks) - 4);
 
   return (
     <div className="flex flex-col gap-5 px-5 pt-8">
@@ -71,9 +67,7 @@ export default function DetailedStatsPage() {
             </button>
           ))}
         </div>
-        <Card className="mt-2 overflow-hidden p-3">
-          {grid && grid.length > 0 && <ConsistencyGrid weeks={grid} cellSize={cellSize} />}
-        </Card>
+        <div className="mt-3">{grid && grid.length > 0 && <ConsistencyGrid weeks={grid} />}</div>
       </section>
 
       <section className="grid grid-cols-2 gap-2">
