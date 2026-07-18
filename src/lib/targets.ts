@@ -11,10 +11,13 @@ export function guessWeightFromTarget(targetWeight: string | null): number | nul
   return match ? Number(match[0]) : null;
 }
 
-/** Parses a free-form duration target ("30s", "1min", "1.5 min") into whole seconds. */
+/** Parses a free-form duration target ("30s", "1min", "1.5 min", "1:30") into whole seconds. */
 export function guessSecondsFromTarget(targetTime: string | null): number | null {
   if (!targetTime) return null;
-  const match = /([\d.]+)\s*(s|sec|secs|seconds|min|mins|minutes)?/i.exec(targetTime);
+  const trimmed = targetTime.trim();
+  const colonMatch = /^(\d+):(\d{1,2})$/.exec(trimmed);
+  if (colonMatch) return Number(colonMatch[1]) * 60 + Number(colonMatch[2]);
+  const match = /([\d.]+)\s*(s|sec|secs|seconds|min|mins|minutes)?/i.exec(trimmed);
   if (!match) return null;
   const value = Number(match[1]);
   if (Number.isNaN(value)) return null;
