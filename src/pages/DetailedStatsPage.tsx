@@ -78,11 +78,11 @@ export default function DetailedStatsPage() {
 
       <section className="grid grid-cols-2 gap-2">
         <Card className="p-3 text-center">
-          <p className="font-mono text-lg font-semibold text-text">{Math.round(totalVolume).toLocaleString()}</p>
+          <p className="font-mono text-lg font-extralight text-text">{Math.round(totalVolume).toLocaleString()}</p>
           <p className="text-[10px] uppercase tracking-wide text-text-secondary">Total volume</p>
         </Card>
         <Card className="p-3 text-center">
-          <p className="font-mono text-lg font-semibold text-text">{avgPerWeek ?? '—'}</p>
+          <p className="font-mono text-lg font-extralight text-text">{avgPerWeek ?? '—'}</p>
           <p className="text-[10px] uppercase tracking-wide text-text-secondary">Avg sessions/week</p>
         </Card>
       </section>
@@ -94,7 +94,7 @@ export default function DetailedStatsPage() {
             {prs.map((pr) => (
               <Card key={pr.exerciseId} className="flex items-center justify-between p-3">
                 <span className="text-sm text-text">{pr.exerciseName}</span>
-                <span className="font-mono text-sm font-semibold text-text">{pr.display}</span>
+                <span className="font-mono text-sm font-extralight text-text">{pr.display}</span>
               </Card>
             ))}
           </div>

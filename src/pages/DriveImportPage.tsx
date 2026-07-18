@@ -18,7 +18,6 @@ export default function DriveImportPage() {
   if (!isDriveConfigured()) {
     return (
       <div className="flex flex-col items-center gap-3 px-6 pt-20 text-center">
-        <span className="text-4xl">🔗</span>
         <h1 className="text-xl font-semibold text-text">Google Drive isn't set up yet</h1>
         <p className="text-sm text-text-secondary">
           This deployment doesn't have a Google OAuth client configured. Set{' '}

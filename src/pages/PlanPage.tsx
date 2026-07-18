@@ -101,7 +101,7 @@ export default function PlanPage() {
                       {run.exercises.map((ex) => (
                         <div key={ex.id} className="flex items-center justify-between text-sm">
                           <span className="text-text">{ex.name}</span>
-                          <span className="text-text-secondary">
+                          <span className="font-mono font-extralight text-text-secondary">
                             {ex.targetSets ?? '—'}×{ex.targetReps ?? ex.targetTime ?? '—'}
                             {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
                             {ex.targetRest ? ` · rest ${ex.targetRest}` : ''}

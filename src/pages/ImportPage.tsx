@@ -89,7 +89,6 @@ export default function ImportPage() {
           dragOver ? 'border-accent bg-accent/10' : 'border-border bg-card'
         }`}
       >
-        <span className="text-3xl">📄</span>
         <span className="font-medium text-text">
           {loading ? 'Parsing…' : 'Tap to upload, or drag a file here'}
         </span>
@@ -123,7 +122,7 @@ export default function ImportPage() {
         onClick={() => navigate('/import/drive')}
         className="btn-secondary flex items-center justify-center gap-2 w-full px-6 py-4"
       >
-        <span className="text-lg">🔗</span> Connect Google Drive
+        Connect Google Drive
       </button>
 
       <p className="text-center text-xs text-text-secondary">

@@ -12,8 +12,8 @@
   --accent: #c6461d;
   --accent-ink: #fcfbf9;
 
-  /* radius — constant across contrast levels */
-  --radius: 4px;
+  /* radius — sharp corners throughout, constant across contrast levels */
+  --radius: 0px;
 
   /* fonts */
   --font-display: 'Space Grotesk', sans-serif;
@@ -115,15 +115,19 @@ body {
  * Button component classes — base style from the design system.
  * Sizing (py-*, px-*, w-full, text-sm, etc.) is still applied via Tailwind
  * utilities at the call site so individual buttons can adjust without forks.
+ *
+ * Buttons use half of --shadow-offset (cards/card-lift use the full value):
+ * buttons frequently sit side by side with tight gaps, and the full offset
+ * made adjacent buttons' shadows crowd into each other.
  */
 @layer components {
   .btn-primary {
     background-color: var(--accent);
     color: var(--accent-ink);
     font-weight: 600;
-    border-radius: 0;
+    border-radius: var(--radius);
     /* Shadow: darkened accent (40% accent + 60% black) — visible and on-brand in both themes */
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 0 var(--btn-primary-shadow);
+    box-shadow: calc(var(--shadow-offset) / 2) calc(var(--shadow-offset) / 2) 0 0 var(--btn-primary-shadow);
     transition: opacity 0.1s ease;
     cursor: pointer;
     text-align: center;
@@ -136,10 +140,10 @@ body {
     background-color: var(--card);
     color: var(--text);
     font-weight: 500;
-    border-radius: 0;
+    border-radius: var(--radius);
     border: var(--border-width) solid var(--border);
     /* Shadow uses border color — dark in light theme, lighter in dark theme, creating visible contrast either way */
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 0 var(--border);
+    box-shadow: calc(var(--shadow-offset) / 2) calc(var(--shadow-offset) / 2) 0 0 var(--border);
     transition: opacity 0.1s ease;
     cursor: pointer;
     text-align: center;

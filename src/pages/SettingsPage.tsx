@@ -20,7 +20,7 @@ export default function SettingsPage() {
 
         <div className="border border-border bg-card p-4">
           <p className="text-sm font-medium text-text">Color mode</p>
-          <div className="mt-2 flex gap-2" style={{ '--shadow-offset': '3px' } as React.CSSProperties}>
+          <div className="mt-2 flex gap-2">
             {MODES.map((m) => (
               <button
                 key={m.value}

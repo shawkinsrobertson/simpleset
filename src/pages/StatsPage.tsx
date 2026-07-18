@@ -20,7 +20,7 @@ function PrCard({ prs }: { prs: Awaited<ReturnType<typeof getPersonalRecords>> }
   return (
     <Card className="p-3 text-center" as="button" onClick={() => setIndex((i) => i + 1)}>
       <p className="truncate text-[11px] font-medium text-text-secondary">{pr.exerciseName}</p>
-      <p className="font-mono text-lg font-semibold text-text">{pr.display}</p>
+      <p className="font-mono text-lg font-extralight text-text">{pr.display}</p>
       {prs.length > 1 && (
         <div className="mt-1 flex justify-center gap-1">
           {prs.map((_, i) => (
@@ -70,11 +70,11 @@ export default function StatsPage() {
 
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-3 text-center">
-          <p className="font-mono text-xl font-semibold text-text">🔥{streak ?? 0}</p>
+          <p className="font-mono text-xl font-extralight text-text">🔥{streak ?? 0}</p>
           <p className="text-[10px] uppercase tracking-wide text-text-secondary">Streak</p>
         </Card>
         <Card className="p-3 text-center">
-          <p className="font-mono text-xl font-semibold text-text">
+          <p className="font-mono text-xl font-extralight text-text">
             {cycle?.completed ?? 0}/{cycle?.total ?? 0}
           </p>
           <p className="text-[10px] uppercase tracking-wide text-text-secondary">Sessions completed</p>
