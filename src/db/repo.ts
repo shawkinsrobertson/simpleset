@@ -216,6 +216,31 @@ export async function repeatDayInDb(planId: string, dayId: string, weekCount: nu
   await insertClonedDays(planId, dayId, clones);
 }
 
+/**
+ * Archives a day and its (currently active) exercises rather than deleting
+ * them, so sessions/logged sets from before the delete stay meaningful —
+ * the same archived-not-deleted pattern re-sync uses when a day disappears
+ * from a re-imported doc. Remaining active days are renumbered to close
+ * the gap.
+ */
+export async function archiveDayInDb(planId: string, dayId: string): Promise<void> {
+  const exercises = await getExercisesForDay(dayId);
+  const remaining = (await getPlanDays(planId)).filter((d) => d.id !== dayId);
+
+  await db.transaction('rw', db.planDays, db.exercises, async () => {
+    await db.planDays.update(dayId, { archived: true });
+    await Promise.all(exercises.map((e) => db.exercises.update(e.id, { archived: true })));
+    await Promise.all(remaining.map((d, i) => db.planDays.update(d.id, { order: i })));
+  });
+}
+
+/** Persists a new day order for the plan's active days (drag-reorder on the Plan tab). */
+export async function reorderDaysInDb(orderedDayIds: string[]): Promise<void> {
+  await db.transaction('rw', db.planDays, async () => {
+    await Promise.all(orderedDayIds.map((id, i) => db.planDays.update(id, { order: i })));
+  });
+}
+
 export async function getExercisesForPlan(planId: string, opts: { includeArchived?: boolean } = {}): Promise<Exercise[]> {
   const exs = await db.exercises.where('planId').equals(planId).toArray();
   return opts.includeArchived ? exs : exs.filter((e) => !e.archived);
