@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { db } from '../db/db';
 import { completeSession, createPlanFromParsed, getExercisesForPlan, getPlanDays, logSet, skipSession, startSession, updateExerciseCategory } from '../db/repo';
-import { getCycleProgress, getPersonalRecords, getStreak } from './stats';
+import { getCycleProgress, getPersonalRecords, getSessionSummary, getStreak } from './stats';
 import type { ParsedPlan } from '../parser/types';
 
 function id() {
@@ -143,6 +143,50 @@ describe('getPersonalRecords', () => {
     expect(benchPr.display).toBe('145 lb');
     expect(plankPr.display).toBe('45s'); // strength/hold: longer is better
     expect(rowPr.display).toBe('4:50'); // conditioning: shorter is better (290s)
+  });
+});
+
+describe('getSessionSummary', () => {
+  it('totals volume/reps and only flags a PR when this session beats prior history', async () => {
+    const plan = await createPlanFromParsed(twoDayPlan(), { sourceType: 'local', sourceFileName: 'plan.txt' });
+    const days = await getPlanDays(plan.id);
+    const exercises = await getExercisesForPlan(plan.id);
+    const bench = exercises.find((e) => e.name === 'Bench Press')!;
+    const plank = exercises.find((e) => e.name === 'Plank')!;
+
+    // First session: baseline performance — nothing to beat yet, so no PRs.
+    const session1 = await startSession(plan.id, days[0].id);
+    await logSet({
+      sessionId: session1.id, exerciseId: bench.id, setNumber: 1, reps: 8, weight: 135, timeSeconds: null, rpe: null,
+      targetSetsAtLog: null, targetRepsAtLog: null, targetWeightAtLog: null, targetTimeAtLog: null, targetRestAtLog: null,
+    });
+    await logSet({
+      sessionId: session1.id, exerciseId: plank.id, setNumber: 1, reps: null, weight: null, timeSeconds: 30, rpe: null,
+      targetSetsAtLog: null, targetRepsAtLog: null, targetWeightAtLog: null, targetTimeAtLog: null, targetRestAtLog: null,
+    });
+    await completeSession(session1.id);
+
+    const summary1 = await getSessionSummary(session1.id);
+    expect(summary1.totalVolume).toBe(135 * 8);
+    expect(summary1.totalReps).toBe(8);
+    expect(summary1.prs).toHaveLength(0);
+
+    // Second session: beats the bench PR, ties (doesn't beat) the plank hold.
+    const session2 = await startSession(plan.id, days[0].id);
+    await logSet({
+      sessionId: session2.id, exerciseId: bench.id, setNumber: 1, reps: 6, weight: 145, timeSeconds: null, rpe: null,
+      targetSetsAtLog: null, targetRepsAtLog: null, targetWeightAtLog: null, targetTimeAtLog: null, targetRestAtLog: null,
+    });
+    await logSet({
+      sessionId: session2.id, exerciseId: plank.id, setNumber: 1, reps: null, weight: null, timeSeconds: 30, rpe: null,
+      targetSetsAtLog: null, targetRepsAtLog: null, targetWeightAtLog: null, targetTimeAtLog: null, targetRestAtLog: null,
+    });
+
+    const summary2 = await getSessionSummary(session2.id);
+    expect(summary2.totalVolume).toBe(145 * 6);
+    expect(summary2.prs).toHaveLength(1);
+    expect(summary2.prs[0].exerciseName).toBe('Bench Press');
+    expect(summary2.prs[0].display).toBe('145 lb');
   });
 });
 

@@ -1,6 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  completeSession,
   getExerciseGroupsForDay,
   getExercisesForDay,
   getLoggedSetsForSession,
@@ -205,7 +204,7 @@ export default function TodayPage() {
           Skip
         </button>
         <button
-          onClick={() => completeSession(openSession.id)}
+          onClick={() => navigate(`/summary/${openSession.id}`)}
           className="btn-primary flex-[2] py-3"
         >
           Finish workout

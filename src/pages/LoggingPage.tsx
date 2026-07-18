@@ -8,6 +8,9 @@ import { formatSeconds, guessRepsFromTarget, guessSecondsFromTarget, guessWeight
 import StatusBox from '../components/StatusBox';
 import Card from '../components/Card';
 import Stepper from '../components/Stepper';
+import RestTimer from '../components/RestTimer';
+
+const DEFAULT_REST_SECONDS = 60;
 
 export default function LoggingPage() {
   const { exerciseId } = useParams<{ exerciseId: string }>();
@@ -34,6 +37,7 @@ export default function LoggingPage() {
   const [showRpe, setShowRpe] = useState(false);
   const [rpe, setRpe] = useState<number | null>(null);
   const [primed, setPrimed] = useState(false);
+  const [resting, setResting] = useState(false);
 
   useEffect(() => {
     if (!exercise || primed) return;
@@ -76,8 +80,11 @@ export default function LoggingPage() {
     });
     setRpe(null);
     setShowRpe(false);
+    const willBeDone = targetSets != null && doneCount + 1 >= targetSets;
+    if (!willBeDone) setResting(true);
   };
 
+  const restSeconds = guessSecondsFromTarget(exercise.targetRest) ?? DEFAULT_REST_SECONDS;
   const upcomingCount = targetSets != null ? Math.max(0, targetSets - doneCount - (isDone ? 0 : 1)) : 0;
 
   return (
@@ -113,7 +120,9 @@ export default function LoggingPage() {
           </button>
         ))}
 
-        {!isDone && (
+        {resting && <RestTimer seconds={restSeconds} onDone={() => setResting(false)} />}
+
+        {!isDone && !resting && (
           <Card state="active" className="p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">

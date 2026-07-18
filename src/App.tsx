@@ -14,6 +14,7 @@ import SyncReviewPage from './pages/SyncReviewPage';
 import SettingsPage from './pages/SettingsPage';
 import LoggingPage from './pages/LoggingPage';
 import DetailedStatsPage from './pages/DetailedStatsPage';
+import SummaryPage from './pages/SummaryPage';
 
 const WIDE_ROUTES = ['/confirm', '/sync-review'];
 
@@ -36,6 +37,7 @@ function App() {
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/log/:exerciseId" element={<LoggingPage />} />
+        <Route path="/summary/:sessionId" element={<SummaryPage />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="/import/drive" element={<DriveImportPage />} />
         <Route path="/import/sections" element={<SectionPickerPage />} />

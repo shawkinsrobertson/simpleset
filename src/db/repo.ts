@@ -191,7 +191,13 @@ async function insertClonedDays(planId: string, afterDayId: string, clones: { we
     newDays.push({ id: newDayId, planId, week: clone.week, order: 0, label: clone.label, archived: false });
   }
 
-  const finalOrder = [...days.slice(0, idx + 1), ...newDays, ...days.slice(idx + 1)];
+  // Stable-sort by week so duplicates from repeating several different days
+  // land in week-number order instead of clustered right after their source.
+  const spliced = [...days.slice(0, idx + 1), ...newDays, ...days.slice(idx + 1)];
+  const finalOrder = spliced
+    .map((d, i) => ({ d, i }))
+    .sort((a, b) => a.d.week - b.d.week || a.i - b.i)
+    .map(({ d }) => d);
 
   await db.transaction('rw', db.planDays, db.exercises, db.exerciseGroups, async () => {
     await db.planDays.bulkAdd(newDays);
@@ -354,6 +360,14 @@ export async function logSet(input: {
 
 export async function deleteLoggedSet(setId: string): Promise<void> {
   await db.loggedSets.delete(setId);
+}
+
+/** Edits a logged set's performance fields — used by the post-workout summary screen's review/edit step. */
+export async function updateLoggedSet(
+  setId: string,
+  patch: Partial<Pick<LoggedSet, 'reps' | 'weight' | 'timeSeconds' | 'rpe'>>,
+): Promise<void> {
+  await db.loggedSets.update(setId, patch);
 }
 
 export async function getLoggedSetsForSession(sessionId: string): Promise<LoggedSet[]> {
