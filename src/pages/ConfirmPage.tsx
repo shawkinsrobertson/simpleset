@@ -82,7 +82,9 @@ export default function ConfirmPage() {
       const clone = cloneDayForWeek(p.days[idx], p.days[idx].week, `${p.days[idx].label} (copy)`);
       const days = [...p.days];
       days.splice(idx + 1, 0, clone);
-      return { ...p, days };
+      // Stable-sort by week so duplicates from repeating several different
+      // days land in week-number order instead of clustered after their source.
+      return { ...p, days: days.map((d, i) => ({ d, i })).sort((a, b) => a.d.week - b.d.week || a.i - b.i).map(({ d }) => d) };
     });
   };
 
@@ -95,7 +97,9 @@ export default function ConfirmPage() {
       const copies = repeatDayAcrossWeeks(p.days[idx], weekCount, startWeek);
       const days = [...p.days];
       days.splice(idx + 1, 0, ...copies);
-      return { ...p, days };
+      // Stable-sort by week so duplicates from repeating several different
+      // days land in week-number order instead of clustered after their source.
+      return { ...p, days: days.map((d, i) => ({ d, i })).sort((a, b) => a.d.week - b.d.week || a.i - b.i).map(({ d }) => d) };
     });
   };
 

@@ -1,6 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  completeSession,
   getExerciseGroupsForDay,
   getExercisesForDay,
   getLoggedSetsForSession,
@@ -19,9 +18,12 @@ import Card from '../components/Card';
 import StatusBox, { type BoxState } from '../components/StatusBox';
 import type { Exercise } from '../db/types';
 
-function exerciseState(ex: Exercise, doneCount: number, isActive: boolean): BoxState {
-  const isDone = ex.targetSets != null && doneCount >= ex.targetSets;
-  if (isDone) return 'done';
+function isExerciseDone(ex: Exercise, doneCount: number, finishedExerciseIds: string[]): boolean {
+  return (ex.targetSets != null && doneCount >= ex.targetSets) || finishedExerciseIds.includes(ex.id);
+}
+
+function exerciseState(ex: Exercise, doneCount: number, finishedExerciseIds: string[], isActive: boolean): BoxState {
+  if (isExerciseDone(ex, doneCount, finishedExerciseIds)) return 'done';
   if (isActive) return 'active';
   return 'todo';
 }
@@ -71,10 +73,11 @@ export default function TodayPage() {
   loggedSets?.forEach((s) => doneCounts.set(s.exerciseId, (doneCounts.get(s.exerciseId) ?? 0) + 1));
   const sessionVolume = (loggedSets ?? []).reduce((sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0), 0);
 
+  const finishedExerciseIds = openSession?.finishedExerciseIds ?? [];
   const orderedExercises = (exercises ?? []).slice().sort((a, b) => a.order - b.order);
   const firstIncompleteId = orderedExercises.find((ex) => {
     const done = doneCounts.get(ex.id) ?? 0;
-    return !(ex.targetSets != null && done >= ex.targetSets);
+    return !isExerciseDone(ex, done, finishedExerciseIds);
   })?.id;
 
   const runs = groupIntoRuns(orderedExercises, groups ?? []);
@@ -157,7 +160,7 @@ export default function TodayPage() {
           {orderedExercises.map((ex) => (
             <StatusBox
               key={ex.id}
-              state={exerciseState(ex, doneCounts.get(ex.id) ?? 0, ex.id === firstIncompleteId)}
+              state={exerciseState(ex, doneCounts.get(ex.id) ?? 0, finishedExerciseIds, ex.id === firstIncompleteId)}
               size={24}
             />
           ))}
@@ -174,7 +177,7 @@ export default function TodayPage() {
             )}
             {run.exercises.map((ex) => {
               const done = doneCounts.get(ex.id) ?? 0;
-              const state = exerciseState(ex, done, ex.id === firstIncompleteId);
+              const state = exerciseState(ex, done, finishedExerciseIds, ex.id === firstIncompleteId);
               return (
                 <Card key={ex.id} state={state} as="button" className="p-4" onClick={() => navigate(`/log/${ex.id}`)}>
                   <div className="flex items-center justify-between gap-2">
@@ -205,7 +208,7 @@ export default function TodayPage() {
           Skip
         </button>
         <button
-          onClick={() => completeSession(openSession.id)}
+          onClick={() => navigate(`/summary/${openSession.id}`)}
           className="btn-primary flex-[2] py-3"
         >
           Finish workout

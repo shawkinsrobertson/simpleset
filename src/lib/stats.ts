@@ -1,5 +1,5 @@
 import { db } from '../db/db';
-import type { Exercise, Session } from '../db/types';
+import type { Exercise, LoggedSet, Session } from '../db/types';
 import { getPlanDays, getExercisesForPlan } from '../db/repo';
 import { formatSeconds } from './targets';
 
@@ -255,4 +255,84 @@ export function weeksForRange(range: StatsRange, planImportDate: number): number
   const weeksSinceImport = Math.max(1, Math.ceil((Date.now() - planImportDate) / (7 * 86400000)));
   const capByRange: Record<StatsRange, number> = { '1m': 4, '3m': 13, '6m': 26, all: weeksSinceImport };
   return Math.min(capByRange[range], range === 'all' ? weeksSinceImport : capByRange[range]);
+}
+
+function bestTime(sets: LoggedSet[], category: Exercise['category']): number | null {
+  const timed = sets.filter((s) => s.timeSeconds != null).map((s) => s.timeSeconds!);
+  if (timed.length === 0) return null;
+  return category === 'conditioning' ? Math.min(...timed) : Math.max(...timed);
+}
+
+function beatsTime(a: number, b: number, category: Exercise['category']): boolean {
+  return category === 'conditioning' ? a < b : a > b;
+}
+
+export interface SessionPr {
+  exerciseId: string;
+  exerciseName: string;
+  display: string;
+}
+
+export interface SessionSummary {
+  totalVolume: number;
+  totalReps: number;
+  prs: SessionPr[];
+}
+
+/**
+ * Stats for the post-workout summary screen: this session's total volume
+ * and reps, plus which exercises got a new PR *in this session* — direction-
+ * aware the same way getPersonalRecords is, but comparing against every
+ * other session's history rather than just reporting the current best.
+ * Only counts as a PR if there's prior history to beat (a first-ever
+ * performance isn't a "PR" in the exciting sense).
+ */
+export async function getSessionSummary(sessionId: string): Promise<SessionSummary> {
+  const sessionSets = await db.loggedSets.where('sessionId').equals(sessionId).toArray();
+  const totalVolume = sessionSets.reduce((sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0), 0);
+  const totalReps = sessionSets.reduce((sum, s) => sum + (s.reps ?? 0), 0);
+
+  const exerciseIds = [...new Set(sessionSets.map((s) => s.exerciseId))];
+  const prs: SessionPr[] = [];
+
+  for (const exerciseId of exerciseIds) {
+    const exercise = await db.exercises.get(exerciseId);
+    if (!exercise) continue;
+
+    const allSets = await db.loggedSets.where('exerciseId').equals(exerciseId).toArray();
+    const thisSessionSets = allSets.filter((s) => s.sessionId === sessionId);
+    const priorSets = allSets.filter((s) => s.sessionId !== sessionId);
+
+    if (exercise.targetTime != null) {
+      const thisBest = bestTime(thisSessionSets, exercise.category);
+      const priorBest = bestTime(priorSets, exercise.category);
+      if (thisBest != null && priorBest != null && beatsTime(thisBest, priorBest, exercise.category)) {
+        prs.push({ exerciseId, exerciseName: exercise.name, display: formatSeconds(thisBest) });
+      }
+      continue;
+    }
+
+    const thisWeighted = thisSessionSets.filter((s) => s.weight != null && s.weight > 0);
+    const priorWeighted = priorSets.filter((s) => s.weight != null && s.weight > 0);
+    if (thisWeighted.length > 0 && priorWeighted.length > 0) {
+      const thisBest = Math.max(...thisWeighted.map((s) => s.weight!));
+      const priorBest = Math.max(...priorWeighted.map((s) => s.weight!));
+      if (thisBest > priorBest) {
+        prs.push({ exerciseId, exerciseName: exercise.name, display: `${thisBest} lb` });
+      }
+      continue;
+    }
+
+    const thisRepped = thisSessionSets.filter((s) => s.reps != null);
+    const priorRepped = priorSets.filter((s) => s.reps != null);
+    if (thisRepped.length > 0 && priorRepped.length > 0) {
+      const thisBest = Math.max(...thisRepped.map((s) => s.reps!));
+      const priorBest = Math.max(...priorRepped.map((s) => s.reps!));
+      if (thisBest > priorBest) {
+        prs.push({ exerciseId, exerciseName: exercise.name, display: `${thisBest} reps` });
+      }
+    }
+  }
+
+  return { totalVolume, totalReps, prs };
 }

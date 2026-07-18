@@ -1,13 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { db } from '../db/db';
-import { deleteLoggedSet, getLoggedSetsForExercise, getOpenSession, logSet } from '../db/repo';
+import {
+  deleteLoggedSet,
+  getLoggedSetsForExercise,
+  getOpenSession,
+  logSet,
+  markExerciseFinished,
+  unmarkExerciseFinished,
+} from '../db/repo';
 import { useActivePlan } from '../hooks/useActivePlan';
 import { useLiveValue } from '../hooks/useLiveValue';
 import { formatSeconds, guessRepsFromTarget, guessSecondsFromTarget, guessWeightFromTarget } from '../lib/targets';
 import StatusBox from '../components/StatusBox';
 import Card from '../components/Card';
 import Stepper from '../components/Stepper';
+import RestTimer from '../components/RestTimer';
+
+const DEFAULT_REST_SECONDS = 60;
 
 export default function LoggingPage() {
   const { exerciseId } = useParams<{ exerciseId: string }>();
@@ -34,6 +44,7 @@ export default function LoggingPage() {
   const [showRpe, setShowRpe] = useState(false);
   const [rpe, setRpe] = useState<number | null>(null);
   const [primed, setPrimed] = useState(false);
+  const [resting, setResting] = useState(false);
 
   useEffect(() => {
     if (!exercise || primed) return;
@@ -57,7 +68,8 @@ export default function LoggingPage() {
 
   const doneCount = loggedSets?.length ?? 0;
   const targetSets = exercise.targetSets;
-  const isDone = targetSets != null && doneCount >= targetSets;
+  const manuallyFinished = openSession.finishedExerciseIds.includes(exercise.id);
+  const isDone = (targetSets != null && doneCount >= targetSets) || manuallyFinished;
 
   const handleLog = async () => {
     await logSet({
@@ -76,8 +88,11 @@ export default function LoggingPage() {
     });
     setRpe(null);
     setShowRpe(false);
+    const willBeDone = targetSets != null && doneCount + 1 >= targetSets;
+    if (!willBeDone) setResting(true);
   };
 
+  const restSeconds = guessSecondsFromTarget(exercise.targetRest) ?? DEFAULT_REST_SECONDS;
   const upcomingCount = targetSets != null ? Math.max(0, targetSets - doneCount - (isDone ? 0 : 1)) : 0;
 
   return (
@@ -113,7 +128,9 @@ export default function LoggingPage() {
           </button>
         ))}
 
-        {!isDone && (
+        {resting && <RestTimer seconds={restSeconds} onDone={() => setResting(false)} />}
+
+        {!isDone && !resting && (
           <Card state="active" className="p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -148,6 +165,14 @@ export default function LoggingPage() {
             >
               Log set {doneCount + 1}
             </button>
+            {targetSets == null && doneCount > 0 && (
+              <button
+                onClick={() => markExerciseFinished(openSession.id, exercise.id)}
+                className="mt-2 w-full text-sm font-medium text-text-secondary"
+              >
+                Finish exercise
+              </button>
+            )}
           </Card>
         )}
 
@@ -167,6 +192,14 @@ export default function LoggingPage() {
             <button onClick={() => navigate('/today')} className="btn-primary px-4 py-2 text-sm">
               Back to day
             </button>
+            {manuallyFinished && (
+              <button
+                onClick={() => unmarkExerciseFinished(openSession.id, exercise.id)}
+                className="text-xs font-medium text-text-secondary"
+              >
+                Log another set
+              </button>
+            )}
           </div>
         )}
       </div>

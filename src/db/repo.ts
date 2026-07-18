@@ -191,7 +191,13 @@ async function insertClonedDays(planId: string, afterDayId: string, clones: { we
     newDays.push({ id: newDayId, planId, week: clone.week, order: 0, label: clone.label, archived: false });
   }
 
-  const finalOrder = [...days.slice(0, idx + 1), ...newDays, ...days.slice(idx + 1)];
+  // Stable-sort by week so duplicates from repeating several different days
+  // land in week-number order instead of clustered right after their source.
+  const spliced = [...days.slice(0, idx + 1), ...newDays, ...days.slice(idx + 1)];
+  const finalOrder = spliced
+    .map((d, i) => ({ d, i }))
+    .sort((a, b) => a.d.week - b.d.week || a.i - b.i)
+    .map(({ d }) => d);
 
   await db.transaction('rw', db.planDays, db.exercises, db.exerciseGroups, async () => {
     await db.planDays.bulkAdd(newDays);
@@ -214,6 +220,31 @@ export async function repeatDayInDb(planId: string, dayId: string, weekCount: nu
   if (!day) return;
   const clones = Array.from({ length: weekCount }, (_, i) => ({ week: day.week + 1 + i, label: day.label }));
   await insertClonedDays(planId, dayId, clones);
+}
+
+/**
+ * Archives a day and its (currently active) exercises rather than deleting
+ * them, so sessions/logged sets from before the delete stay meaningful —
+ * the same archived-not-deleted pattern re-sync uses when a day disappears
+ * from a re-imported doc. Remaining active days are renumbered to close
+ * the gap.
+ */
+export async function archiveDayInDb(planId: string, dayId: string): Promise<void> {
+  const exercises = await getExercisesForDay(dayId);
+  const remaining = (await getPlanDays(planId)).filter((d) => d.id !== dayId);
+
+  await db.transaction('rw', db.planDays, db.exercises, async () => {
+    await db.planDays.update(dayId, { archived: true });
+    await Promise.all(exercises.map((e) => db.exercises.update(e.id, { archived: true })));
+    await Promise.all(remaining.map((d, i) => db.planDays.update(d.id, { order: i })));
+  });
+}
+
+/** Persists a new day order for the plan's active days (drag-reorder on the Plan tab). */
+export async function reorderDaysInDb(orderedDayIds: string[]): Promise<void> {
+  await db.transaction('rw', db.planDays, async () => {
+    await Promise.all(orderedDayIds.map((id, i) => db.planDays.update(id, { order: i })));
+  });
 }
 
 export async function getExercisesForPlan(planId: string, opts: { includeArchived?: boolean } = {}): Promise<Exercise[]> {
@@ -278,6 +309,7 @@ export async function startSession(planId: string, dayId: string): Promise<Sessi
     date: Date.now(),
     status: 'planned',
     completedAt: null,
+    finishedExerciseIds: [],
   };
   await db.sessions.add(session);
   return session;
@@ -289,6 +321,25 @@ export async function completeSession(sessionId: string): Promise<void> {
 
 export async function skipSession(sessionId: string): Promise<void> {
   await db.sessions.update(sessionId, { status: 'skipped', completedAt: Date.now() });
+}
+
+/** Manually marks an exercise finished for this session — the only way to complete one with no pre-defined target set count. */
+export async function markExerciseFinished(sessionId: string, exerciseId: string): Promise<void> {
+  const session = await db.sessions.get(sessionId);
+  if (!session) return;
+  const finishedExerciseIds = session.finishedExerciseIds.includes(exerciseId)
+    ? session.finishedExerciseIds
+    : [...session.finishedExerciseIds, exerciseId];
+  await db.sessions.update(sessionId, { finishedExerciseIds });
+}
+
+/** Reopens a manually-finished exercise so more sets can be logged against it this session. */
+export async function unmarkExerciseFinished(sessionId: string, exerciseId: string): Promise<void> {
+  const session = await db.sessions.get(sessionId);
+  if (!session) return;
+  await db.sessions.update(sessionId, {
+    finishedExerciseIds: session.finishedExerciseIds.filter((id) => id !== exerciseId),
+  });
 }
 
 export async function logSet(input: {
@@ -329,6 +380,14 @@ export async function logSet(input: {
 
 export async function deleteLoggedSet(setId: string): Promise<void> {
   await db.loggedSets.delete(setId);
+}
+
+/** Edits a logged set's performance fields — used by the post-workout summary screen's review/edit step. */
+export async function updateLoggedSet(
+  setId: string,
+  patch: Partial<Pick<LoggedSet, 'reps' | 'weight' | 'timeSeconds' | 'rpe'>>,
+): Promise<void> {
+  await db.loggedSets.update(setId, patch);
 }
 
 export async function getLoggedSetsForSession(sessionId: string): Promise<LoggedSet[]> {

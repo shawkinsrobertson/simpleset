@@ -12,9 +12,6 @@
   --accent: #c6461d;
   --accent-ink: #fcfbf9;
 
-  /* radius — sharp corners throughout, constant across contrast levels */
-  --radius: 0px;
-
   /* fonts */
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -75,7 +72,16 @@
   --color-text: var(--text);
   --color-text-secondary: var(--text-secondary);
   --color-border: var(--border);
-  --radius-DEFAULT: var(--radius);
+  /*
+   * Overrides Tailwind's own built-in --radius (0.25rem, used by the bare
+   * `rounded` utility) — sharp corners throughout, constant across contrast
+   * levels. Must be redeclared under this exact name inside @theme: Tailwind
+   * bakes utility values from its own theme keys at build time, so a plain
+   * :root override (or the wrong key name, e.g. --radius-DEFAULT) is silently
+   * ignored by `rounded` even though it still affects other CSS that
+   * reads var(--radius) directly (e.g. .btn-primary below).
+   */
+  --radius: 0px;
   --font-display: var(--font-display);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
