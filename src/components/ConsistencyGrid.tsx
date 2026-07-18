@@ -7,7 +7,6 @@ export default function ConsistencyGrid({ weeks, cellSize = 12 }: { weeks: Consi
       {weeks.flat().map((day) => (
         <div
           key={day.date}
-          className="rounded-sm"
           style={{
             width: cellSize,
             height: cellSize,

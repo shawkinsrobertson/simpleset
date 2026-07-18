@@ -31,7 +31,7 @@ function ExerciseRow({ m }: { m: ExerciseMatch }) {
         <p className="font-medium text-text">{name}</p>
         <p className="text-xs text-text-secondary">{m.dayLabel}</p>
       </div>
-      {m.detail && <p className="text-right text-xs text-text-secondary">{m.detail}</p>}
+      {m.detail && <p className="text-right font-mono text-xs font-extralight text-text-secondary">{m.detail}</p>}
     </div>
   );
 }
@@ -103,7 +103,6 @@ export default function SyncReviewPage() {
   if (!diffHasChanges(diff)) {
     return (
       <div className="flex flex-col items-center gap-4 px-6 pt-20 text-center">
-        <span className="text-4xl">✅</span>
         <h1 className="text-xl font-semibold text-text">No changes detected</h1>
         <p className="text-sm text-text-secondary">"{plan.name}" already matches this file.</p>
         <button

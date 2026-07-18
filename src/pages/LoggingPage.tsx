@@ -105,7 +105,7 @@ export default function LoggingPage() {
             title="Tap to remove"
           >
             <StatusBox state="done" />
-            <span className="font-mono text-sm text-text">
+            <span className="font-mono text-sm font-extralight text-text">
               #{i + 1} · {s.timeSeconds != null ? formatSeconds(s.timeSeconds) : (s.reps ?? '—')}
               {s.weight ? ` × ${s.weight}` : ''}
               {s.rpe ? ` @${s.rpe}` : ''}

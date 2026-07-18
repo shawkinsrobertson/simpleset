@@ -7,8 +7,8 @@ import { useLongPress } from '../../hooks/useLongPress';
 const FIELD_INPUT =
   'w-full rounded border border-border bg-card px-2 py-2 text-sm focus:border-accent focus:outline-none sm:rounded sm:border-0 sm:bg-transparent sm:px-2 sm:py-2 sm:focus:bg-accent/10';
 
-/** Number/data fields use JetBrains Mono per the type scale. */
-const NUM_FIELD = `${FIELD_INPUT} font-mono text-center`;
+/** Number/data fields use JetBrains Mono extra-light per the type scale. */
+const NUM_FIELD = `${FIELD_INPUT} font-mono font-extralight text-center`;
 
 interface ExerciseRowProps {
   exercise: ParsedExercise;

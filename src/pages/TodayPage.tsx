@@ -104,17 +104,9 @@ export default function TodayPage() {
 
   if (sessionLoading) return null;
 
-  const Wordmark = (
-    <h1 className="font-display text-2xl font-semibold">
-      <span className="text-text">simple</span>
-      <span className="text-accent">set</span>
-    </h1>
-  );
-
   if (!openSession) {
     return (
       <div className="flex flex-col gap-5 px-5 pt-10">
-        {Wordmark}
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">{plan.name}</p>
           <h2 className="font-display text-xl font-semibold text-text">Ready for your next session?</h2>
@@ -140,22 +132,21 @@ export default function TodayPage() {
 
   return (
     <div className="flex flex-col gap-4 px-5 pt-8">
-      {Wordmark}
-      <p className="-mt-2 text-xs font-medium uppercase tracking-wide text-text-secondary">{plan.name}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">{plan.name}</p>
 
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-3 text-center">
-          <p className="font-mono text-xl font-semibold text-text">🔥{streak ?? 0}</p>
+          <p className="font-mono text-xl font-extralight text-text">🔥{streak ?? 0}</p>
           <p className="text-[10px] uppercase tracking-wide text-text-secondary">Streak</p>
         </Card>
         <Card className="p-3 text-center">
-          <p className="font-mono text-xl font-semibold text-text">
+          <p className="font-mono text-xl font-extralight text-text">
             {cycle?.completed ?? 0}/{cycle?.total ?? 0}
           </p>
           <p className="text-[10px] uppercase tracking-wide text-text-secondary">Sessions completed</p>
         </Card>
         <Card className="p-3 text-center">
-          <p className="font-mono text-xl font-semibold text-text">{Math.round(sessionVolume).toLocaleString()}</p>
+          <p className="font-mono text-xl font-extralight text-text">{Math.round(sessionVolume).toLocaleString()}</p>
           <p className="text-[10px] uppercase tracking-wide text-text-secondary">Volume</p>
         </Card>
       </div>
@@ -189,13 +180,13 @@ export default function TodayPage() {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <h3 className={`font-semibold text-text ${state === 'done' ? 'line-through' : ''}`}>{ex.name}</h3>
-                      <p className="font-mono text-xs text-text-secondary">
+                      <p className="font-mono text-xs font-extralight text-text-secondary">
                         Target: {ex.targetSets ?? '—'} × {ex.targetReps ?? ex.targetTime ?? '—'}
                         {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
                         {ex.targetRest ? ` · rest ${ex.targetRest}` : ''}
                       </p>
                     </div>
-                    <span className="whitespace-nowrap rounded-full bg-bg px-2.5 py-1 font-mono text-xs font-semibold text-text">
+                    <span className="whitespace-nowrap rounded-full bg-bg px-2.5 py-1 font-mono text-xs font-extralight text-text">
                       {state === 'active' ? `in progress ${done}/${ex.targetSets ?? '—'}` : `${done}${ex.targetSets != null ? `/${ex.targetSets}` : ''}`}
                     </span>
                   </div>
