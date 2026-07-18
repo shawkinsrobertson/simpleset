@@ -132,7 +132,7 @@ export default function SyncReviewPage() {
   };
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-8">
+    <div className="flex flex-col gap-5 px-5 pt-8 pb-24">
       <div>
         <h1 className="text-2xl font-semibold text-text">Review changes</h1>
         <p className="mt-1 text-sm text-text-secondary">
@@ -233,7 +233,7 @@ export default function SyncReviewPage() {
         </div>
       </section>
 
-      <div className="sticky bottom-20 flex flex-col gap-2 rounded border border-border bg-card/95 p-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-4xl flex-col gap-2 border-t border-border bg-card/95 p-3 backdrop-blur">
         {unresolvedCount > 0 && (
           <p className="text-center text-xs text-amber-600">
             Resolve {unresolvedCount} rename{unresolvedCount === 1 ? '' : 's'} above to continue
