@@ -134,7 +134,7 @@ export default function TodayPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-5 pt-8">
+    <div className="flex flex-col gap-4 px-5 pt-8 pb-24">
       <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">{plan.name}</p>
 
       <div className="grid grid-cols-3 gap-2">
@@ -200,7 +200,7 @@ export default function TodayPage() {
         ))}
       </div>
 
-      <div className="sticky bottom-20 flex gap-2 rounded border border-border bg-card/95 p-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-md gap-2 border-t border-border bg-card/95 p-3 backdrop-blur">
         <button
           onClick={() => skipSession(openSession.id)}
           className="btn-secondary flex-1 py-3"

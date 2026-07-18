@@ -246,7 +246,7 @@ export default function ConfirmPage() {
   const totalExercises = plan.days.reduce((sum, d) => sum + d.exercises.length, 0);
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-8">
+    <div className="flex flex-col gap-5 px-5 pt-8 pb-24">
       <div>
         <h1 className="font-display text-2xl font-semibold text-text">Confirm your plan</h1>
         <p className="mt-1 text-sm text-text-secondary">
@@ -303,7 +303,7 @@ export default function ConfirmPage() {
         + Add day
       </button>
 
-      <div className="sticky bottom-20 flex flex-col gap-2 rounded border border-border bg-card/95 p-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-4xl flex-col gap-2 border-t border-border bg-card/95 p-3 backdrop-blur">
         <p className="text-center text-xs text-text-secondary">
           {plan.days.length} day{plan.days.length === 1 ? '' : 's'}, {totalExercises} exercise
           {totalExercises === 1 ? '' : 's'}
