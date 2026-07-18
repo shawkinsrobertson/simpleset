@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { db } from '../db/db';
-import { deleteLoggedSet, getLoggedSetsForExercise, getOpenSession, logSet } from '../db/repo';
+import {
+  deleteLoggedSet,
+  getLoggedSetsForExercise,
+  getOpenSession,
+  logSet,
+  markExerciseFinished,
+  unmarkExerciseFinished,
+} from '../db/repo';
 import { useActivePlan } from '../hooks/useActivePlan';
 import { useLiveValue } from '../hooks/useLiveValue';
 import { formatSeconds, guessRepsFromTarget, guessSecondsFromTarget, guessWeightFromTarget } from '../lib/targets';
@@ -61,7 +68,8 @@ export default function LoggingPage() {
 
   const doneCount = loggedSets?.length ?? 0;
   const targetSets = exercise.targetSets;
-  const isDone = targetSets != null && doneCount >= targetSets;
+  const manuallyFinished = openSession.finishedExerciseIds.includes(exercise.id);
+  const isDone = (targetSets != null && doneCount >= targetSets) || manuallyFinished;
 
   const handleLog = async () => {
     await logSet({
@@ -157,6 +165,14 @@ export default function LoggingPage() {
             >
               Log set {doneCount + 1}
             </button>
+            {targetSets == null && doneCount > 0 && (
+              <button
+                onClick={() => markExerciseFinished(openSession.id, exercise.id)}
+                className="mt-2 w-full text-sm font-medium text-text-secondary"
+              >
+                Finish exercise
+              </button>
+            )}
           </Card>
         )}
 
@@ -176,6 +192,14 @@ export default function LoggingPage() {
             <button onClick={() => navigate('/today')} className="btn-primary px-4 py-2 text-sm">
               Back to day
             </button>
+            {manuallyFinished && (
+              <button
+                onClick={() => unmarkExerciseFinished(openSession.id, exercise.id)}
+                className="text-xs font-medium text-text-secondary"
+              >
+                Log another set
+              </button>
+            )}
           </div>
         )}
       </div>

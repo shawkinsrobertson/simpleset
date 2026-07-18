@@ -309,6 +309,7 @@ export async function startSession(planId: string, dayId: string): Promise<Sessi
     date: Date.now(),
     status: 'planned',
     completedAt: null,
+    finishedExerciseIds: [],
   };
   await db.sessions.add(session);
   return session;
@@ -320,6 +321,25 @@ export async function completeSession(sessionId: string): Promise<void> {
 
 export async function skipSession(sessionId: string): Promise<void> {
   await db.sessions.update(sessionId, { status: 'skipped', completedAt: Date.now() });
+}
+
+/** Manually marks an exercise finished for this session — the only way to complete one with no pre-defined target set count. */
+export async function markExerciseFinished(sessionId: string, exerciseId: string): Promise<void> {
+  const session = await db.sessions.get(sessionId);
+  if (!session) return;
+  const finishedExerciseIds = session.finishedExerciseIds.includes(exerciseId)
+    ? session.finishedExerciseIds
+    : [...session.finishedExerciseIds, exerciseId];
+  await db.sessions.update(sessionId, { finishedExerciseIds });
+}
+
+/** Reopens a manually-finished exercise so more sets can be logged against it this session. */
+export async function unmarkExerciseFinished(sessionId: string, exerciseId: string): Promise<void> {
+  const session = await db.sessions.get(sessionId);
+  if (!session) return;
+  await db.sessions.update(sessionId, {
+    finishedExerciseIds: session.finishedExerciseIds.filter((id) => id !== exerciseId),
+  });
 }
 
 export async function logSet(input: {

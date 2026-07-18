@@ -92,6 +92,12 @@ export interface Session {
   date: number;
   status: SessionStatus;
   completedAt: number | null;
+  /**
+   * Exercise ids manually marked "finished" this session — the only way to
+   * complete an exercise with no pre-defined target set count, since
+   * doneCount >= targetSets never becomes true when targetSets is null.
+   */
+  finishedExerciseIds: string[];
 }
 
 export interface LoggedSet {
