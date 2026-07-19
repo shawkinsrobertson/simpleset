@@ -233,7 +233,7 @@ export default function SyncReviewPage() {
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-4xl flex-col gap-2 border-t border-border bg-card/95 p-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-4xl flex-col gap-2 p-3">
         {unresolvedCount > 0 && (
           <p className="text-center text-xs text-amber-600">
             Resolve {unresolvedCount} rename{unresolvedCount === 1 ? '' : 's'} above to continue

@@ -250,7 +250,7 @@ export default function DayBlock({
       </div>
 
       {selectionMode && (
-        <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-md items-center gap-2 border-t border-border bg-card p-3">
+        <div className="fixed inset-x-0 bottom-20 z-50 mx-auto flex max-w-4xl items-center gap-2 border-t border-border bg-card p-3">
           <span className="text-xs font-medium text-text-secondary">{selected.size} selected</span>
           <div className="ml-auto flex gap-2">
             {selectedGroupIds.size > 0 && (
