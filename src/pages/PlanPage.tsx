@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { DndContext, type DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -129,6 +129,7 @@ function PlanDayCard({
 }
 
 export default function PlanPage() {
+  const navigate = useNavigate();
   const { loading: planLoading, plan } = useActivePlan();
   const { value: days } = useLiveValue(() => (plan ? getPlanDays(plan.id) : Promise.resolve([])), [plan?.id]);
   const { value: exercises } = useLiveValue(
@@ -214,7 +215,10 @@ export default function PlanPage() {
                   setRepeatDayId(day.id);
                   setRepeatWeeks(1);
                 }}
-                onStart={() => startSession(plan.id, day.id)}
+                onStart={async () => {
+                  await startSession(plan.id, day.id);
+                  navigate('/today');
+                }}
                 canStart={!openSession}
               />
             ))}

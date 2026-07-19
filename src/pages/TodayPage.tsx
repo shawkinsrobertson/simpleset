@@ -200,7 +200,7 @@ export default function TodayPage() {
         ))}
       </div>
 
-      <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-md gap-2 border-t border-border bg-card/95 p-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-md gap-2 p-3">
         <button
           onClick={() => skipSession(openSession.id)}
           className="btn-secondary flex-1 py-3"

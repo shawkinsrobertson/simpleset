@@ -303,7 +303,7 @@ export default function ConfirmPage() {
         + Add day
       </button>
 
-      <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-4xl flex-col gap-2 border-t border-border bg-card/95 p-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-4xl flex-col gap-2 p-3">
         <p className="text-center text-xs text-text-secondary">
           {plan.days.length} day{plan.days.length === 1 ? '' : 's'}, {totalExercises} exercise
           {totalExercises === 1 ? '' : 's'}
