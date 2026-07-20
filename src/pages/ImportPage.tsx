@@ -14,7 +14,7 @@ export default function ImportPage() {
     setLoading(true);
     try {
       const kind = detectFileKind(file);
-      if (!kind) throw new Error(`Unsupported file type: "${file.name}". SimpleSet supports .docx, .xlsx, .pdf, and .txt files.`);
+      if (!kind) throw new Error(`Unsupported file type: "${file.name}". simpleSet supports .docx, .xlsx, .pdf, and .txt files.`);
 
       const sourceState = {
         sourceType: 'local' as const,
