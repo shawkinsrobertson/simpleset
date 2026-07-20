@@ -21,6 +21,7 @@
 /* ---- color mode: light (default) ---- */
 :root,
 :root[data-mode='light'] {
+  color-scheme: light;
   --bg: #fafaf8;
   --card: #ffffff;
   --text: #2a2a28;
@@ -31,6 +32,7 @@
 
 /* ---- color mode: dark ---- */
 :root[data-mode='dark'] {
+  color-scheme: dark;
   --bg: #1c1c1a;
   --card: #242422;
   --text: #edede8;
