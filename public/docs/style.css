@@ -1,0 +1,140 @@
+:root {
+  --bg: #fafaf8;
+  --text: #1c1c1a;
+  --text-secondary: #6b6b66;
+  --accent: #c6461d;
+  --border: #dddad3;
+  --card: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1a;
+    --text: #fafaf8;
+    --text-secondary: #a3a39c;
+    --accent: #e2703f;
+    --border: #3a3a37;
+    --card: #262624;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+}
+
+header.site {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+header.site .wordmark {
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+header.site .wordmark span {
+  color: var(--accent);
+}
+
+nav.site {
+  display: flex;
+  gap: 16px;
+  font-size: 0.875rem;
+}
+
+nav.site a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+nav.site a:hover {
+  color: var(--accent);
+}
+
+h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 32px 0 8px;
+}
+
+p {
+  color: var(--text);
+  margin: 0 0 16px;
+}
+
+.lede {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+}
+
+.updated {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-bottom: 32px;
+}
+
+a {
+  color: var(--accent);
+}
+
+ul {
+  padding-left: 1.25rem;
+  color: var(--text);
+}
+
+li {
+  margin-bottom: 6px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin: 24px 0;
+}
+
+.btn {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: 2px solid var(--text);
+  box-shadow: 4px 4px 0 var(--text);
+}
+
+footer.site {
+  margin-top: 64px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
