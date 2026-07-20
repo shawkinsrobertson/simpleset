@@ -30,7 +30,7 @@ export default function SplashScreen({ onDone }: Props) {
     >
       <img
         src={isDark ? '/wordmark-dark.png' : '/wordmark-light.png'}
-        alt="SimpleSet"
+        alt="simpleSet"
         className="w-56 select-none"
         draggable={false}
       />

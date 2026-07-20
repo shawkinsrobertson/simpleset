@@ -23,7 +23,7 @@ export async function parseFile(file: File): Promise<ParsedPlan> {
 
   if (!kind) {
     throw new Error(
-      `Unsupported file type: "${file.name}". SimpleSet supports .docx, .xlsx, .pdf, and .txt files.`,
+      `Unsupported file type: "${file.name}". simpleSet supports .docx, .xlsx, .pdf, and .txt files.`,
     );
   }
 

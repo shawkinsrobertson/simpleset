@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.png'],
       manifest: {
-        name: 'SimpleSet',
-        short_name: 'SimpleSet',
+        name: 'simpleSet',
+        short_name: 'simpleSet',
         description: 'Turn an existing workout plan into a fast, local-first tracker.',
         theme_color: '#C6461D',
         background_color: '#fafaf8',
