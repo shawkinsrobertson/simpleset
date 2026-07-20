@@ -1,17 +1,26 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAccessToken, isDriveConfigured } from '../drive/googleAuth';
-import { exportDriveFile, listPlanCandidateFiles } from '../drive/driveApi';
+import { exportDriveFile, isFolder, listFolderContents, searchPlanCandidateFiles } from '../drive/driveApi';
 import type { DriveFile } from '../drive/driveApi';
 import { parseCsv, parseText } from '../parser';
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
+interface Crumb {
+  id: string;
+  name: string;
+}
+
+const ROOT_CRUMB: Crumb = { id: 'root', name: 'My Drive' };
+
 export default function DriveImportPage() {
   const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(null);
   const [files, setFiles] = useState<DriveFile[]>([]);
+  const [path, setPath] = useState<Crumb[]>([ROOT_CRUMB]);
   const [query, setQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<DriveFile[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,31 +43,64 @@ export default function DriveImportPage() {
     );
   }
 
+  const openFolder = async (activeToken: string, folderId: string) => {
+    setError(null);
+    setLoading(true);
+    try {
+      setFiles(await listFolderContents(activeToken, folderId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load that folder.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const connect = async () => {
     setError(null);
     setLoading(true);
     try {
       const t = await getAccessToken();
       setToken(t);
-      const results = await listPlanCandidateFiles(t);
-      setFiles(results);
+      setLoading(false);
+      await openFolder(t, ROOT_CRUMB.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not connect to Google Drive.');
-    } finally {
       setLoading(false);
     }
   };
 
-  const search = async () => {
+  const navigateToFolder = (file: DriveFile) => {
     if (!token) return;
+    setSearchResults(null);
+    setQuery('');
+    setPath((p) => [...p, { id: file.id, name: file.name }]);
+    openFolder(token, file.id);
+  };
+
+  const navigateToCrumb = (index: number) => {
+    if (!token) return;
+    setSearchResults(null);
+    setQuery('');
+    setPath((p) => p.slice(0, index + 1));
+    openFolder(token, path[index].id);
+  };
+
+  const search = async () => {
+    if (!token || !query.trim()) return;
+    setError(null);
     setLoading(true);
     try {
-      setFiles(await listPlanCandidateFiles(token, query));
+      setSearchResults(await searchPlanCandidateFiles(token, query.trim()));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearSearch = () => {
+    setQuery('');
+    setSearchResults(null);
   };
 
   const pickFile = async (file: DriveFile) => {
@@ -87,11 +129,13 @@ export default function DriveImportPage() {
     }
   };
 
+  const displayedFiles = searchResults ?? files;
+
   return (
     <div className="flex flex-col gap-5 px-5 pt-10">
       <div>
         <h1 className="text-2xl font-semibold text-text">Import from Google Drive</h1>
-        <p className="mt-1 text-sm text-text-secondary">Pick a Doc or Sheet with your workout plan.</p>
+        <p className="mt-1 text-sm text-text-secondary">Browse your Drive, or search, for a Doc or Sheet with your workout plan.</p>
       </div>
 
       {!token ? (
@@ -109,33 +153,73 @@ export default function DriveImportPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && search()}
-              placeholder="Search your files…"
+              placeholder="Search all your files…"
               className="flex-1 rounded border border-border px-3 py-2.5"
             />
-            <button onClick={search} className="rounded border border-border px-4 text-sm font-medium">
-              Search
-            </button>
+            {searchResults ? (
+              <button onClick={clearSearch} className="rounded border border-border px-4 text-sm font-medium">
+                Clear
+              </button>
+            ) : (
+              <button onClick={search} className="rounded border border-border px-4 text-sm font-medium">
+                Search
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-col gap-2">
-            {files.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => pickFile(f)}
-                disabled={loading}
-                className="flex items-center gap-3 rounded border border-border bg-card p-3 text-left disabled:opacity-50"
-              >
-                <span className="text-xl">
-                  {f.mimeType.includes('spreadsheet') ? '📊' : '📄'}
+          {!searchResults && (
+            <div className="flex flex-wrap items-center gap-1 text-sm text-text-secondary">
+              {path.map((crumb, i) => (
+                <span key={crumb.id} className="flex items-center gap-1">
+                  {i > 0 && <span>/</span>}
+                  {i === path.length - 1 ? (
+                    <span className="font-medium text-text">{crumb.name}</span>
+                  ) : (
+                    <button onClick={() => navigateToCrumb(i)} className="text-accent">
+                      {crumb.name}
+                    </button>
+                  )}
                 </span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-text">{f.name}</p>
-                  <p className="text-xs text-text-secondary">Modified {dateFmt.format(new Date(f.modifiedTime))}</p>
-                </div>
-              </button>
-            ))}
-            {files.length === 0 && !loading && (
-              <p className="text-center text-sm text-text-secondary">No Docs or Sheets found.</p>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            {displayedFiles.map((f) =>
+              isFolder(f) ? (
+                <button
+                  key={f.id}
+                  onClick={() => navigateToFolder(f)}
+                  disabled={loading}
+                  className="flex items-center gap-3 rounded border border-border bg-card p-3 text-left disabled:opacity-50"
+                >
+                  <span className="text-xl">📁</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-text">{f.name}</p>
+                  </div>
+                  <span className="text-text-secondary">›</span>
+                </button>
+              ) : (
+                <button
+                  key={f.id}
+                  onClick={() => pickFile(f)}
+                  disabled={loading}
+                  className="flex items-center gap-3 rounded border border-border bg-card p-3 text-left disabled:opacity-50"
+                >
+                  <span className="text-xl">
+                    {f.mimeType.includes('spreadsheet') ? '📊' : '📄'}
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-text">{f.name}</p>
+                    <p className="text-xs text-text-secondary">Modified {dateFmt.format(new Date(f.modifiedTime))}</p>
+                  </div>
+                </button>
+              ),
+            )}
+            {displayedFiles.length === 0 && !loading && (
+              <p className="text-center text-sm text-text-secondary">
+                {searchResults ? 'No Docs or Sheets matched your search.' : 'This folder is empty.'}
+              </p>
             )}
           </div>
         </>
