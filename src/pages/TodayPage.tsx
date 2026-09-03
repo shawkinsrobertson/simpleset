@@ -13,7 +13,7 @@ import { getCycleProgress, getStreak } from '../lib/stats';
 import { db } from '../db/db';
 import { useActivePlan } from '../hooks/useActivePlan';
 import { useLiveValue } from '../hooks/useLiveValue';
-import { groupIntoRuns } from '../lib/groupRuns';
+import { groupIntoRuns, type Run } from '../lib/groupRuns';
 import Card from '../components/Card';
 import StatusBox, { type BoxState } from '../components/StatusBox';
 import type { Exercise } from '../db/types';
@@ -26,6 +26,50 @@ function exerciseState(ex: Exercise, doneCount: number, finishedExerciseIds: str
   if (isExerciseDone(ex, doneCount, finishedExerciseIds)) return 'done';
   if (isActive) return 'active';
   return 'todo';
+}
+
+/**
+ * One combined card for a superset/circuit run — grouped exercises log
+ * together (see SupersetLoggingPage/CircuitLoggingPage), so unlike a solo
+ * exercise they don't get their own per-exercise card here.
+ */
+function GroupCard({
+  run,
+  doneCounts,
+  finishedExerciseIds,
+  firstIncompleteId,
+  onClick,
+}: {
+  run: Run;
+  doneCounts: Map<string, number>;
+  finishedExerciseIds: string[];
+  firstIncompleteId: string | undefined;
+  onClick: () => void;
+}) {
+  const rounds = Math.max(...run.exercises.map((ex) => ex.targetSets ?? 0));
+  const totalRounds = rounds > 0 ? rounds : null;
+  const minDone = Math.min(...run.exercises.map((ex) => doneCounts.get(ex.id) ?? 0));
+  const allDone = run.exercises.every((ex) => isExerciseDone(ex, doneCounts.get(ex.id) ?? 0, finishedExerciseIds));
+  const isActiveGroup = run.exercises.some((ex) => ex.id === firstIncompleteId);
+  const state: BoxState = allDone ? 'done' : isActiveGroup ? 'active' : 'todo';
+
+  return (
+    <Card state={state} as="button" className="p-4" onClick={onClick}>
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h3 className={`font-semibold text-text ${state === 'done' ? 'line-through' : ''}`}>
+            {run.exercises.map((ex) => ex.name).join(' + ')}
+          </h3>
+          <p className="font-mono text-xs font-extralight text-text-secondary">
+            {totalRounds != null ? `${minDone}/${totalRounds} rounds` : `${minDone} rounds`}
+          </p>
+        </div>
+        <span className="whitespace-nowrap rounded-full bg-bg px-2.5 py-1 font-mono text-xs font-extralight text-text">
+          {state === 'active' ? `round ${minDone + 1}` : `${minDone}${totalRounds != null ? `/${totalRounds}` : ''}`}
+        </span>
+      </div>
+    </Card>
+  );
 }
 
 export default function TodayPage() {
@@ -175,27 +219,37 @@ export default function TodayPage() {
                 {run.group.label ?? (run.group.type === 'circuit' ? 'Circuit' : 'Superset')}
               </p>
             )}
-            {run.exercises.map((ex) => {
-              const done = doneCounts.get(ex.id) ?? 0;
-              const state = exerciseState(ex, done, finishedExerciseIds, ex.id === firstIncompleteId);
-              return (
-                <Card key={ex.id} state={state} as="button" className="p-4" onClick={() => navigate(`/log/${ex.id}`)}>
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <h3 className={`font-semibold text-text ${state === 'done' ? 'line-through' : ''}`}>{ex.name}</h3>
-                      <p className="font-mono text-xs font-extralight text-text-secondary">
-                        Target: {ex.targetSets ?? '—'} × {ex.targetReps ?? ex.targetTime ?? '—'}
-                        {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
-                        {ex.targetRest ? ` · rest ${ex.targetRest}` : ''}
-                      </p>
+            {run.group ? (
+              <GroupCard
+                run={run}
+                doneCounts={doneCounts}
+                finishedExerciseIds={finishedExerciseIds}
+                firstIncompleteId={firstIncompleteId}
+                onClick={() => navigate(run.group!.type === 'circuit' ? `/log-circuit/${run.group!.id}` : `/log-superset/${run.group!.id}`)}
+              />
+            ) : (
+              run.exercises.map((ex) => {
+                const done = doneCounts.get(ex.id) ?? 0;
+                const state = exerciseState(ex, done, finishedExerciseIds, ex.id === firstIncompleteId);
+                return (
+                  <Card key={ex.id} state={state} as="button" className="p-4" onClick={() => navigate(`/log/${ex.id}`)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <h3 className={`font-semibold text-text ${state === 'done' ? 'line-through' : ''}`}>{ex.name}</h3>
+                        <p className="font-mono text-xs font-extralight text-text-secondary">
+                          Target: {ex.targetSets ?? '—'} × {ex.targetReps ?? ex.targetTime ?? '—'}
+                          {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
+                          {ex.targetRest ? ` · rest ${ex.targetRest}` : ''}
+                        </p>
+                      </div>
+                      <span className="whitespace-nowrap rounded-full bg-bg px-2.5 py-1 font-mono text-xs font-extralight text-text">
+                        {state === 'active' ? `in progress ${done}/${ex.targetSets ?? '—'}` : `${done}${ex.targetSets != null ? `/${ex.targetSets}` : ''}`}
+                      </span>
                     </div>
-                    <span className="whitespace-nowrap rounded-full bg-bg px-2.5 py-1 font-mono text-xs font-extralight text-text">
-                      {state === 'active' ? `in progress ${done}/${ex.targetSets ?? '—'}` : `${done}${ex.targetSets != null ? `/${ex.targetSets}` : ''}`}
-                    </span>
-                  </div>
-                </Card>
-              );
-            })}
+                  </Card>
+                );
+              })
+            )}
           </div>
         ))}
       </div>

@@ -120,6 +120,24 @@ export class SimpleSetDB extends Dexie {
           s.finishedExerciseIds = s.finishedExerciseIds ?? [];
         });
       });
+
+    this.version(7)
+      .stores({
+        plans: 'id, isActive, importDate',
+        planDays: 'id, planId, archived, [planId+order]',
+        exercises: 'id, planId, dayId, archived, groupId, [dayId+order]',
+        exerciseGroups: 'id, planId, dayId, [dayId+order]',
+        sessions: 'id, planId, dayId, date, status',
+        loggedSets: 'id, sessionId, exerciseId, timestamp',
+        planVersions: 'id, planId, importedAt',
+        pendingSyncs: 'id, planId',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('sessions').toCollection().modify((s) => {
+          s.notes = s.notes ?? null;
+          s.exerciseNotes = s.exerciseNotes ?? {};
+        });
+      });
   }
 }
 

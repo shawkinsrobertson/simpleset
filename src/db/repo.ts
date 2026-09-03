@@ -310,9 +310,29 @@ export async function startSession(planId: string, dayId: string): Promise<Sessi
     status: 'planned',
     completedAt: null,
     finishedExerciseIds: [],
+    notes: null,
+    exerciseNotes: {},
   };
   await db.sessions.add(session);
   return session;
+}
+
+/** Updates the overall note for a workout — edited on the post-workout summary. */
+export async function updateSessionNotes(sessionId: string, notes: string): Promise<void> {
+  await db.sessions.update(sessionId, { notes: notes.trim() === '' ? null : notes });
+}
+
+/** Updates a single exercise's note for this session — edited during logging or on the summary. */
+export async function updateExerciseNote(sessionId: string, exerciseId: string, note: string): Promise<void> {
+  const session = await db.sessions.get(sessionId);
+  if (!session) return;
+  const exerciseNotes = { ...session.exerciseNotes };
+  if (note.trim() === '') {
+    delete exerciseNotes[exerciseId];
+  } else {
+    exerciseNotes[exerciseId] = note;
+  }
+  await db.sessions.update(sessionId, { exerciseNotes });
 }
 
 export async function completeSession(sessionId: string): Promise<void> {
