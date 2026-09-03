@@ -98,6 +98,10 @@ export interface Session {
    * doneCount >= targetSets never becomes true when targetSets is null.
    */
   finishedExerciseIds: string[];
+  /** Overall note about this workout, edited on the post-workout summary. */
+  notes: string | null;
+  /** Per-exercise notes for this session, keyed by exerciseId — edited during logging or on the summary. */
+  exerciseNotes: Record<string, string>;
 }
 
 export interface LoggedSet {

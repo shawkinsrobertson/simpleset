@@ -8,6 +8,7 @@ import {
   logSet,
   markExerciseFinished,
   unmarkExerciseFinished,
+  updateExerciseNote,
 } from '../db/repo';
 import { useActivePlan } from '../hooks/useActivePlan';
 import { useLiveValue } from '../hooks/useLiveValue';
@@ -45,6 +46,10 @@ export default function LoggingPage() {
   const [rpe, setRpe] = useState<number | null>(null);
   const [primed, setPrimed] = useState(false);
   const [resting, setResting] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [notePrimed, setNotePrimed] = useState(false);
 
   useEffect(() => {
     if (!exercise || primed) return;
@@ -53,6 +58,12 @@ export default function LoggingPage() {
     setWeight(guessWeightFromTarget(exercise.targetWeight));
     setPrimed(true);
   }, [exercise, primed]);
+
+  useEffect(() => {
+    if (!openSession || !exerciseId || notePrimed) return;
+    setNoteDraft(openSession.exerciseNotes[exerciseId] ?? '');
+    setNotePrimed(true);
+  }, [openSession, exerciseId, notePrimed]);
 
   if (planLoading) return null;
   if (!plan || !openSession || !exercise) {
@@ -92,6 +103,18 @@ export default function LoggingPage() {
     if (!willBeDone) setResting(true);
   };
 
+  // A timed exercise logs itself the instant the work timer hits zero, then
+  // hands straight into the same rest flow a manual log would — no second tap.
+  const handleWorkDone = async () => {
+    setWorking(false);
+    await handleLog();
+  };
+
+  const saveNote = (value: string) => {
+    if (!exerciseId) return;
+    void updateExerciseNote(openSession.id, exerciseId, value);
+  };
+
   const restSeconds = guessSecondsFromTarget(exercise.targetRest) ?? DEFAULT_REST_SECONDS;
   const upcomingCount = targetSets != null ? Math.max(0, targetSets - doneCount - (isDone ? 0 : 1)) : 0;
 
@@ -109,6 +132,31 @@ export default function LoggingPage() {
           {exercise.targetRest ? ` · rest ${exercise.targetRest}` : ''}
         </p>
         {exercise.notes && <p className="mt-1 text-xs text-text-secondary">{exercise.notes}</p>}
+      </div>
+
+      <div>
+        {noteOpen ? (
+          <textarea
+            autoFocus
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            onBlur={() => {
+              saveNote(noteDraft);
+              setNoteOpen(false);
+            }}
+            placeholder="Note on this exercise…"
+            rows={2}
+            className="w-full rounded border border-border bg-card p-2 text-sm text-text"
+          />
+        ) : noteDraft ? (
+          <button onClick={() => setNoteOpen(true)} className="w-full rounded border border-dashed border-border p-2 text-left text-sm text-text-secondary">
+            {noteDraft}
+          </button>
+        ) : (
+          <button onClick={() => setNoteOpen(true)} className="text-sm font-medium text-text-secondary">
+            + Note
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -130,7 +178,9 @@ export default function LoggingPage() {
 
         {resting && <RestTimer seconds={restSeconds} onDone={() => setResting(false)} />}
 
-        {!isDone && !resting && (
+        {working && <RestTimer seconds={seconds ?? 0} onDone={handleWorkDone} label="Work" />}
+
+        {!isDone && !resting && !working && (
           <Card state="active" className="p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -160,10 +210,11 @@ export default function LoggingPage() {
               </div>
             )}
             <button
-              onClick={handleLog}
-              className="btn-primary mt-4 w-full py-3"
+              onClick={isTimed ? () => setWorking(true) : handleLog}
+              disabled={isTimed && !seconds}
+              className="btn-primary mt-4 w-full py-3 disabled:opacity-50"
             >
-              Log set {doneCount + 1}
+              {isTimed ? 'Start work timer' : `Log set ${doneCount + 1}`}
             </button>
             {targetSets == null && doneCount > 0 && (
               <button

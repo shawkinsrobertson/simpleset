@@ -6,13 +6,17 @@ import { useWakeLock } from '../hooks/useWakeLock';
 interface RestTimerProps {
   seconds: number;
   onDone: () => void;
+  /** 'Rest' (default) for between-set/round timing, 'Work' for a timed exercise's active countdown. */
+  label?: string;
+  /** Message shown briefly once the countdown hits zero. */
+  completeLabel?: string;
 }
 
 const ADJUST_STEP = 15;
 const COMPLETE_LINGER_MS = 1400;
 
-/** Countdown shown between sets. Keeps the screen awake and vibrates + shows a confirmation on completion, then hands control back. */
-export default function RestTimer({ seconds, onDone }: RestTimerProps) {
+/** Countdown shown between sets (or, with label="Work", during a timed exercise). Keeps the screen awake and vibrates + shows a confirmation on completion, then hands control back. */
+export default function RestTimer({ seconds, onDone, label = 'Rest', completeLabel }: RestTimerProps) {
   const [remaining, setRemaining] = useState(seconds);
   const [complete, setComplete] = useState(false);
   const onDoneRef = useRef(onDone);
@@ -46,9 +50,9 @@ export default function RestTimer({ seconds, onDone }: RestTimerProps) {
 
   return (
     <Card state="active" className="p-4 text-center">
-      <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Rest</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">{label}</p>
       {complete ? (
-        <p className="mt-2 text-lg font-semibold text-accent">Rest complete ✓</p>
+        <p className="mt-2 text-lg font-semibold text-accent">{completeLabel ?? `${label} complete ✓`}</p>
       ) : (
         <>
           <p className="mt-1 font-mono text-4xl font-extralight text-text">{formatSeconds(remaining)}</p>
@@ -61,7 +65,7 @@ export default function RestTimer({ seconds, onDone }: RestTimerProps) {
             </button>
           </div>
           <button onClick={onDone} className="mt-3 w-full text-sm font-medium text-text-secondary">
-            Skip rest
+            Skip {label.toLowerCase()}
           </button>
         </>
       )}

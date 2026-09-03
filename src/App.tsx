@@ -13,6 +13,8 @@ import DriveImportPage from './pages/DriveImportPage';
 import SyncReviewPage from './pages/SyncReviewPage';
 import SettingsPage from './pages/SettingsPage';
 import LoggingPage from './pages/LoggingPage';
+import SupersetLoggingPage from './pages/SupersetLoggingPage';
+import CircuitLoggingPage from './pages/CircuitLoggingPage';
 import DetailedStatsPage from './pages/DetailedStatsPage';
 import SummaryPage from './pages/SummaryPage';
 
@@ -37,6 +39,8 @@ function App() {
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/log/:exerciseId" element={<LoggingPage />} />
+        <Route path="/log-superset/:groupId" element={<SupersetLoggingPage />} />
+        <Route path="/log-circuit/:groupId" element={<CircuitLoggingPage />} />
         <Route path="/summary/:sessionId" element={<SummaryPage />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="/import/drive" element={<DriveImportPage />} />
