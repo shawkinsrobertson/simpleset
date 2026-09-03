@@ -28,6 +28,10 @@
   --text-secondary: #84827c;
   --border: #d8d6d0;
   --btn-primary-shadow: #4f1c0c; /* darkened accent: visible against light bg */
+  /* Fixed, always-soft hairline for the bottom nav — deliberately not
+     redefined in the high-contrast blocks below, so it never follows
+     --border's jump to a bold near-black/near-white in that mode. */
+  --nav-border: #d8d6d0;
 }
 
 /* ---- color mode: dark ---- */
@@ -39,6 +43,7 @@
   --text-secondary: #8c8b86;
   --border: #3a3a36;
   --btn-primary-shadow: #1a0903; /* near-black: clearly dark against dark bg */
+  --nav-border: #3a3a36;
 }
 
 /* ---- contrast: soft (default) ---- */
