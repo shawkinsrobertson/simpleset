@@ -10,9 +10,16 @@ import {
   updateSessionNotes,
 } from '../db/repo';
 import { getSessionSummary } from '../lib/stats';
+import { formatSeconds } from '../lib/targets';
 import { useLiveValue } from '../hooks/useLiveValue';
 import Card from '../components/Card';
 import type { Exercise, LoggedSet, Session } from '../db/types';
+
+/** Compact "8×135" / "45s" read of one logged set, for the collapsed review list. */
+function formatSetCompact(set: LoggedSet): string {
+  const primary = set.timeSeconds != null ? formatSeconds(set.timeSeconds) : (set.reps ?? '—');
+  return set.weight ? `${primary}×${set.weight}` : `${primary}`;
+}
 
 function SetInputRow({ set, exercise }: { set: LoggedSet; exercise: Exercise | undefined }) {
   const isTimed = exercise?.targetTime != null;
@@ -194,18 +201,34 @@ export default function SummaryPage() {
       )}
 
       {!editing ? (
-        <Card className="flex items-center justify-between gap-3 p-4">
-          <div>
-            <p className="text-sm font-semibold text-text">Workout summary</p>
-            <p className="mt-0.5 text-xs text-text-secondary">Edit your workout and add notes below.</p>
+        <Card className="flex flex-col gap-3 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-text">Workout summary</p>
+              <p className="mt-0.5 text-xs text-text-secondary">Edit your workout and add notes below.</p>
+            </div>
+            <button
+              onClick={() => setEditing(true)}
+              aria-label="Edit workout"
+              className="shrink-0 rounded border border-border p-2 text-text-secondary"
+            >
+              ✎
+            </button>
           </div>
-          <button
-            onClick={() => setEditing(true)}
-            aria-label="Edit workout"
-            className="shrink-0 rounded border border-border p-2 text-text-secondary"
-          >
-            ✎
-          </button>
+          <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+            {exerciseIds.length > 0 ? (
+              exerciseIds.map((exerciseId) => (
+                <div key={exerciseId} className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm text-text">{exerciseById.get(exerciseId)?.name ?? 'Exercise'}</span>
+                  <span className="font-mono text-xs font-extralight text-text-secondary">
+                    {(setsByExercise.get(exerciseId) ?? []).map(formatSetCompact).join(', ')}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-text-secondary">No sets were logged this workout.</p>
+            )}
+          </div>
         </Card>
       ) : (
         <div className="flex flex-col gap-3">

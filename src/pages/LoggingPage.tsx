@@ -47,7 +47,6 @@ export default function LoggingPage() {
   const [primed, setPrimed] = useState(false);
   const [resting, setResting] = useState(false);
   const [working, setWorking] = useState(false);
-  const [noteOpen, setNoteOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
   const [notePrimed, setNotePrimed] = useState(false);
 
@@ -135,28 +134,15 @@ export default function LoggingPage() {
       </div>
 
       <div>
-        {noteOpen ? (
-          <textarea
-            autoFocus
-            value={noteDraft}
-            onChange={(e) => setNoteDraft(e.target.value)}
-            onBlur={() => {
-              saveNote(noteDraft);
-              setNoteOpen(false);
-            }}
-            placeholder="Note on this exercise…"
-            rows={2}
-            className="w-full rounded border border-border bg-card p-2 text-sm text-text"
-          />
-        ) : noteDraft ? (
-          <button onClick={() => setNoteOpen(true)} className="w-full rounded border border-dashed border-border p-2 text-left text-sm text-text-secondary">
-            {noteDraft}
-          </button>
-        ) : (
-          <button onClick={() => setNoteOpen(true)} className="text-sm font-medium text-text-secondary">
-            + Note
-          </button>
-        )}
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-secondary">Note</label>
+        <textarea
+          value={noteDraft}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          onBlur={() => saveNote(noteDraft)}
+          placeholder="Note on this exercise…"
+          rows={2}
+          className="w-full rounded border border-border bg-card p-2 text-sm text-text"
+        />
       </div>
 
       <div className="flex flex-col gap-2">
