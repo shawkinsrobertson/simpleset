@@ -22,7 +22,10 @@ export default function Layout({ children, wide }: { children: ReactNode; wide?:
        * past the fixed bottom nav).
        */}
       <main className="min-h-0 flex-1 overflow-y-auto pb-20">{children}</main>
-      <nav className={`fixed inset-x-0 bottom-0 mx-auto flex ${maxWidth} border-t border-border bg-card/95 backdrop-blur`}>
+      <nav
+        className={`fixed inset-x-0 bottom-0 mx-auto flex ${maxWidth} bg-bg`}
+        style={{ borderTop: '1px solid var(--nav-border)' }}
+      >
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}
