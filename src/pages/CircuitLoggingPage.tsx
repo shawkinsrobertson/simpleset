@@ -4,7 +4,7 @@ import { db } from '../db/db';
 import { getExercisesForDay, getLoggedSetsForExercise, getOpenSession, logSet } from '../db/repo';
 import { useActivePlan } from '../hooks/useActivePlan';
 import { useLiveValue } from '../hooks/useLiveValue';
-import { formatSeconds, guessRepsFromTarget, guessSecondsFromTarget, guessWeightFromTarget } from '../lib/targets';
+import { guessRepsFromTarget, guessSecondsFromTarget, guessWeightFromTarget } from '../lib/targets';
 import Card from '../components/Card';
 import Stepper from '../components/Stepper';
 import RestTimer from '../components/RestTimer';
@@ -157,16 +157,6 @@ export default function CircuitLoggingPage() {
         </div>
       )}
 
-      {totalLogged > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {exercises.map((ex) => (
-            <p key={ex.id} className="font-mono text-xs font-extralight text-text-secondary">
-              {ex.name}: {doneCounts[ex.id] ?? 0}{ex.targetSets != null ? `/${ex.targetSets}` : ''} rounds
-              {ex.targetTime != null ? ` · ${formatSeconds(guessSecondsFromTarget(ex.targetTime))} each` : ''}
-            </p>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
