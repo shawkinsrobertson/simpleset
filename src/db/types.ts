@@ -1,4 +1,4 @@
-export type SourceType = 'local' | 'drive';
+export type SourceType = 'local' | 'drive' | 'manual';
 
 export interface Plan {
   id: string;

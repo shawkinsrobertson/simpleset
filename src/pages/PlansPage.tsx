@@ -90,7 +90,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         <div>
           <p className="font-semibold text-text">{plan.name}</p>
           <p className="text-xs text-text-secondary">
-            {plan.sourceType === 'drive' ? 'Google Drive' : 'File upload'} · Imported {dateFmt.format(plan.importDate)}
+            {plan.sourceType === 'drive' ? 'Google Drive' : plan.sourceType === 'manual' ? 'Built manually' : 'File upload'} · Imported {dateFmt.format(plan.importDate)}
           </p>
         </div>
         {plan.isActive && (

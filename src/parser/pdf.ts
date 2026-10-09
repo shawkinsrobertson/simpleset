@@ -6,8 +6,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 /**
  * Extracts text from a PDF, reconstructing rough line breaks from the
  * text items' y-position (pdf.js gives a flat stream of positioned items,
- * not lines). Scanned/image-only PDFs (no embedded text layer) are out of
- * scope for V1 — they'll come back empty and the caller should warn.
+ * not lines). Scanned/image-only PDFs have no embedded text layer and come
+ * back empty — the caller sends the raw file to the AI backend instead.
  */
 export async function extractTextFromPdf(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();

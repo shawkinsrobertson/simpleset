@@ -19,11 +19,12 @@
       </header>
 
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated: July 20, 2026</p>
+      <p class="updated">Last updated: October 9, 2026</p>
 
       <p>
-        simpleSet is a local-first app: it's designed so your workout data never has to leave your device.
-        This page explains exactly what that means in practice.
+        simpleSet is designed so your workout data stays on your device for everything you do in the app —
+        tracking workouts, logging sets, viewing stats — with one optional exception: AI-assisted PDF
+        import, a paid feature described below. This page explains exactly what that means in practice.
       </p>
 
       <h2>What simpleSet stores, and where</h2>
@@ -37,8 +38,25 @@
 
       <h2>Importing a plan from a file</h2>
       <p>
-        When you import a plan from a Word document, spreadsheet, PDF, or text file on your device, that
-        file is read and parsed entirely in your browser. It is never uploaded to a server.
+        When you import a plan from a Word document, spreadsheet, or text file on your device, that file is
+        read and parsed entirely in your browser. It is never uploaded to a server.
+      </p>
+
+      <h2>Importing a plan from a PDF (AI-assisted, paid feature)</h2>
+      <p>
+        PDF import works differently, because many PDF workout plans (especially scanned or photographed
+        ones) can't be read reliably by an offline parser. When you import a PDF:
+      </p>
+      <ul>
+        <li>The text or file contents of that PDF are sent to simpleSet's own backend server, which forwards them to Anthropic's Claude API to extract a structured workout plan.</li>
+        <li>The PDF's contents are not stored by simpleSet's backend beyond what's needed to complete that one request, and are not used to train any model.</li>
+        <li>An anonymous, randomly generated device ID (not tied to your name, email, or any account — simpleSet has no accounts) is sent along with the request, used only to apply a daily usage limit.</li>
+        <li>The resulting plan is returned to your browser and stored locally like any other import — it is not kept on simpleSet's server afterward.</li>
+        <li>If this AI-assisted import is unavailable or fails, simpleSet falls back to basic local text parsing of the PDF, entirely on your device, same as other file types.</li>
+      </ul>
+      <p>
+        Anthropic's handling of data sent to its API is governed by its own
+        <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">privacy policy</a>.
       </p>
 
       <h2>Importing a plan from Google Drive (optional)</h2>
@@ -63,7 +81,7 @@
       <h2>Cookies</h2>
       <p>
         simpleSet does not use cookies. It uses your browser's local storage only to remember your display
-        preferences (like theme) on your own device.
+        preferences (like theme) and the anonymous device ID described above, on your own device.
       </p>
 
       <h2>Your control over your data</h2>
