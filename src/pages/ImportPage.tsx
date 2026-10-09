@@ -1,6 +1,15 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { parseFile, detectFileKind, extractTextFromPdf, extractTextFromDocx, parsePlanText, scanSections, needsSectionPicker } from '../parser';
+import { parseFile, detectFileKind, isAiParseConfigured } from '../parser';
+import type { ParsedPlan } from '../parser';
+
+function emptyManualPlan(): ParsedPlan {
+  return {
+    name: '',
+    days: [{ tempId: crypto.randomUUID(), week: 1, label: 'New Day', exercises: [], groups: [] }],
+    warnings: [],
+  };
+}
 
 export default function ImportPage() {
   const navigate = useNavigate();
@@ -22,44 +31,20 @@ export default function ImportPage() {
         sourceModifiedTime: String(file.lastModified),
       };
 
-      // XLSX and plain text are already structured — skip the section picker.
-      if (kind === 'xlsx' || kind === 'text') {
-        const parsed = await parseFile(file);
-        navigate('/confirm', { state: { parsedPlan: parsed, ...sourceState } });
-        return;
-      }
-
-      // Extract text, then decide whether to show the section picker.
-      const text = kind === 'pdf'
-        ? await extractTextFromPdf(file)
-        : await extractTextFromDocx(file);
-
-      const fallbackName = file.name.replace(/\.[^.]+$/, '');
-
-      // The section picker is only reliable for PDFs. DOCX/text formats use
-      // circuit/tri-set structures where per-section exercise counts are
-      // misleading, causing the picker to incorrectly mark real workout days
-      // as unselected.
-      if (kind === 'pdf') {
-        const sections = scanSections(text);
-        if (needsSectionPicker(sections)) {
-          navigate('/import/sections', {
-            state: { sections, extractedText: text, fallbackName, ...sourceState },
-          });
-          return;
-        }
-      }
-
-      const parsed = parsePlanText(text, fallbackName);
-      if (kind === 'pdf' && !text.trim()) {
-        parsed.warnings.unshift('No text could be extracted from this PDF. Scanned/image-only PDFs are not supported — try exporting as a Word doc or spreadsheet instead.');
-      }
+      // PDF (AI-assisted, with a local fallback), xlsx, and text are all
+      // parsed entirely inside parseFile() — no section picker needed, the
+      // AI backend handles filtering non-workout content for PDFs itself.
+      const parsed = await parseFile(file);
       navigate('/confirm', { state: { parsedPlan: parsed, ...sourceState } });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong parsing that file.');
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleManualBuild() {
+    navigate('/confirm', { state: { parsedPlan: emptyManualPlan(), sourceType: 'manual' as const } });
   }
 
   return (
@@ -125,9 +110,17 @@ export default function ImportPage() {
         Connect Google Drive
       </button>
 
+      <button
+        onClick={handleManualBuild}
+        className="btn-secondary flex items-center justify-center gap-2 w-full px-6 py-4"
+      >
+        Build a plan manually
+      </button>
+
       <p className="text-center text-xs text-text-secondary">
-        Scanned/image-only PDFs aren't supported yet — try exporting your plan as a Word doc or
-        spreadsheet instead.
+        {isAiParseConfigured()
+          ? 'PDF import (including scanned PDFs) uses an AI-assisted parsing service — see the privacy policy for details.'
+          : "AI-assisted PDF import isn't configured for this deployment — PDFs fall back to basic text parsing, which may be less accurate."}
       </p>
     </div>
   );
