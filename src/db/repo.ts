@@ -1,5 +1,5 @@
 import { db, newId } from './db';
-import type { DiffEntry, Exercise, ExerciseGroup, LoggedSet, PendingSync, Plan, PlanDay, PlanVersion, Session, SourceType } from './types';
+import type { DiffEntry, Exercise, ExerciseGroup, ExerciseGroupType, LoggedSet, PendingSync, Plan, PlanDay, PlanVersion, Session, SourceType } from './types';
 import type { ParsedPlan } from '../parser/types';
 import type { ApplyPlan } from '../sync/applyPlan';
 import { runApplyPlan } from '../sync/runApplyPlan';
@@ -141,6 +141,10 @@ export async function deletePlan(planId: string): Promise<void> {
   );
 }
 
+export async function getDay(dayId: string): Promise<PlanDay | undefined> {
+  return db.planDays.get(dayId);
+}
+
 export async function getPlanDays(planId: string, opts: { includeArchived?: boolean } = {}): Promise<PlanDay[]> {
   const days = await db.planDays.where('planId').equals(planId).toArray();
   const filtered = opts.includeArchived ? days : days.filter((d) => !d.archived);
@@ -244,6 +248,106 @@ export async function archiveDayInDb(planId: string, dayId: string): Promise<voi
 export async function reorderDaysInDb(orderedDayIds: string[]): Promise<void> {
   await db.transaction('rw', db.planDays, async () => {
     await Promise.all(orderedDayIds.map((id, i) => db.planDays.update(id, { order: i })));
+  });
+}
+
+/** Renames a day or moves it to a different week — edited from the per-day edit screen. */
+export async function updateDayInDb(dayId: string, patch: Partial<Pick<PlanDay, 'label' | 'week'>>): Promise<void> {
+  await db.planDays.update(dayId, patch);
+}
+
+/** Edits an exercise's target fields in place — edited from the per-day edit screen. */
+export async function updateExerciseInDb(
+  exerciseId: string,
+  patch: Partial<Pick<Exercise, 'name' | 'targetSets' | 'targetReps' | 'targetWeight' | 'targetTime' | 'targetRest' | 'notes'>>,
+): Promise<void> {
+  await db.exercises.update(exerciseId, patch);
+}
+
+/** Inserts a blank exercise into a day right after `afterExerciseId` (or at the start, if null), reindexing everything after it. */
+export async function insertExerciseInDayInDb(planId: string, dayId: string, afterExerciseId: string | null): Promise<void> {
+  const existing = await getExercisesForDay(dayId);
+  const idx = afterExerciseId ? existing.findIndex((e) => e.id === afterExerciseId) : -1;
+  const insertAt = idx === -1 ? 0 : idx + 1;
+  const blank: Exercise = {
+    id: newId(),
+    planId,
+    dayId,
+    order: insertAt,
+    name: '',
+    targetSets: null,
+    targetReps: null,
+    targetWeight: null,
+    targetTime: null,
+    targetRest: null,
+    notes: null,
+    groupId: null,
+    category: 'strength',
+    archived: false,
+  };
+  await db.transaction('rw', db.exercises, async () => {
+    await db.exercises.add(blank);
+    await Promise.all(existing.slice(insertAt).map((e, i) => db.exercises.update(e.id, { order: insertAt + 1 + i })));
+  });
+}
+
+/** Clones an exercise right after itself within the same day, reindexing everything after it. */
+export async function duplicateExerciseInDb(exerciseId: string): Promise<void> {
+  const ex = await db.exercises.get(exerciseId);
+  if (!ex) return;
+  const dayExercises = await getExercisesForDay(ex.dayId);
+  const idx = dayExercises.findIndex((e) => e.id === exerciseId);
+  const clone: Exercise = { ...ex, id: newId(), order: idx + 1 };
+  await db.transaction('rw', db.exercises, async () => {
+    await db.exercises.add(clone);
+    await Promise.all(dayExercises.slice(idx + 1).map((e, i) => db.exercises.update(e.id, { order: idx + 2 + i })));
+  });
+}
+
+/**
+ * Archives an exercise rather than deleting it — same archived-not-deleted
+ * pattern as `archiveDayInDb`, so logged sets from before the delete stay
+ * meaningful. Remaining active exercises in the day are renumbered to close
+ * the gap.
+ */
+export async function archiveExerciseInDb(exerciseId: string): Promise<void> {
+  const ex = await db.exercises.get(exerciseId);
+  if (!ex) return;
+  const remaining = (await getExercisesForDay(ex.dayId)).filter((e) => e.id !== exerciseId);
+  await db.transaction('rw', db.exercises, async () => {
+    await db.exercises.update(exerciseId, { archived: true });
+    await Promise.all(remaining.map((e, i) => db.exercises.update(e.id, { order: i })));
+  });
+}
+
+/** Persists a new exercise order within a day (drag-reorder on the per-day edit screen). */
+export async function reorderExercisesInDb(orderedExerciseIds: string[]): Promise<void> {
+  await db.transaction('rw', db.exercises, async () => {
+    await Promise.all(orderedExerciseIds.map((id, i) => db.exercises.update(id, { order: i })));
+  });
+}
+
+/** Groups the given exercises into a new circuit/superset. */
+export async function groupExercisesInDb(
+  planId: string,
+  dayId: string,
+  exerciseIds: string[],
+  type: ExerciseGroupType,
+): Promise<void> {
+  const dayGroups = await getExerciseGroupsForDay(dayId);
+  const group: ExerciseGroup = { id: newId(), planId, dayId, type, order: dayGroups.length, label: null };
+  await db.transaction('rw', db.exercises, db.exerciseGroups, async () => {
+    await db.exerciseGroups.add(group);
+    await Promise.all(exerciseIds.map((id) => db.exercises.update(id, { groupId: group.id })));
+  });
+}
+
+/** Ungroups a circuit/superset — clears the group from its member exercises and removes the group row. */
+export async function ungroupExercisesInDb(groupId: string): Promise<void> {
+  const members = await db.exercises.where('groupId').equals(groupId).toArray();
+  await db.transaction('rw', db.exercises, db.exerciseGroups, async () => {
+    await Promise.all(members.map((e) => db.exercises.update(e.id, { groupId: null })));
+    await db.exerciseGroups.delete(groupId);
   });
 }
 

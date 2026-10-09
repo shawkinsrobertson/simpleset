@@ -29,6 +29,7 @@ interface PlanDayCardProps {
   onDelete: () => void;
   onDuplicate: () => void;
   onRepeat: () => void;
+  onEdit: () => void;
   onStart: () => void;
   canStart: boolean;
 }
@@ -42,6 +43,7 @@ function PlanDayCard({
   onDelete,
   onDuplicate,
   onRepeat,
+  onEdit,
   onStart,
   canStart,
 }: PlanDayCardProps) {
@@ -60,7 +62,8 @@ function PlanDayCard({
           {...attributes}
           {...listeners}
           aria-label="Drag to reorder"
-          className="flex h-8 w-6 shrink-0 cursor-grab items-center justify-center text-text-secondary active:cursor-grabbing"
+          style={{ touchAction: 'none' }}
+          className="flex h-8 w-6 shrink-0 cursor-grab select-none items-center justify-center text-text-secondary active:cursor-grabbing"
         >
           ☰
         </button>
@@ -109,6 +112,9 @@ function PlanDayCard({
           ))}
 
           <div className="mt-1 flex gap-2">
+            <button onClick={onEdit} className="btn-secondary flex-1 py-2 text-xs">
+              Edit exercises
+            </button>
             <button onClick={onDuplicate} className="btn-secondary flex-1 py-2 text-xs">
               Duplicate day
             </button>
@@ -215,6 +221,7 @@ export default function PlanPage() {
                   setRepeatDayId(day.id);
                   setRepeatWeeks(1);
                 }}
+                onEdit={() => navigate(`/plan/day/${day.id}`)}
                 onStart={async () => {
                   await startSession(plan.id, day.id);
                   navigate('/today');

@@ -17,12 +17,13 @@ import SupersetLoggingPage from './pages/SupersetLoggingPage';
 import CircuitLoggingPage from './pages/CircuitLoggingPage';
 import DetailedStatsPage from './pages/DetailedStatsPage';
 import SummaryPage from './pages/SummaryPage';
+import EditDayPage from './pages/EditDayPage';
 
 const WIDE_ROUTES = ['/confirm', '/sync-review'];
 
 function App() {
   const location = useLocation();
-  const wide = WIDE_ROUTES.includes(location.pathname);
+  const wide = WIDE_ROUTES.includes(location.pathname) || location.pathname.startsWith('/plan/day/');
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
 
@@ -34,6 +35,7 @@ function App() {
         <Route path="/" element={<Navigate to="/today" replace />} />
         <Route path="/today" element={<TodayPage />} />
         <Route path="/plan" element={<PlanPage />} />
+        <Route path="/plan/day/:dayId" element={<EditDayPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/stats/detailed" element={<DetailedStatsPage />} />
         <Route path="/plans" element={<PlansPage />} />
