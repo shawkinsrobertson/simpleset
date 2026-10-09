@@ -72,7 +72,8 @@ export default function ExerciseRow({
               {...attributes}
               {...listeners}
               aria-label="Drag to reorder"
-              className="flex h-8 w-8 shrink-0 items-center justify-center text-text-secondary active:text-text-secondary"
+              style={{ touchAction: 'none' }}
+              className="flex h-8 w-8 shrink-0 select-none items-center justify-center text-text-secondary active:text-text-secondary"
             >
               ☰
             </button>
@@ -165,7 +166,8 @@ export default function ExerciseRow({
             {...attributes}
             {...listeners}
             aria-label="Drag to reorder"
-            className="flex h-7 w-5 shrink-0 cursor-grab items-center justify-center text-text-secondary active:cursor-grabbing"
+            style={{ touchAction: 'none' }}
+            className="flex h-7 w-5 shrink-0 cursor-grab select-none items-center justify-center text-text-secondary active:cursor-grabbing"
           >
             ☰
           </button>
