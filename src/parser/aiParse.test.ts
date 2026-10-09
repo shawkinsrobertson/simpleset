@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildAiParseInput, isAiParseConfigured, parseWithAiBackend } from './aiParse';
+import {
+  buildAiParseInput,
+  buildAiParseInputFromText,
+  buildAiParseInputFromFile,
+  isAiParseConfigured,
+  parseWithAiBackend,
+} from './aiParse';
 
 function fakeLocalStorage() {
   const store = new Map<string, string>();
@@ -29,6 +35,31 @@ describe('isAiParseConfigured', () => {
   it('is true when VITE_PARSE_API_URL is set', () => {
     vi.stubEnv('VITE_PARSE_API_URL', 'https://api.example.com');
     expect(isAiParseConfigured()).toBe(true);
+  });
+});
+
+describe('buildAiParseInputFromText', () => {
+  it('builds a text-only input, synchronously', () => {
+    const input = buildAiParseInputFromText('Day 1: Squat 3x5', 'My Plan');
+    expect(input).toEqual({ text: 'Day 1: Squat 3x5', fallbackName: 'My Plan' });
+  });
+});
+
+describe('buildAiParseInputFromFile', () => {
+  it('base64-encodes the file and tags its mime type', async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], 'scanned.pdf', { type: 'application/pdf' });
+    const input = await buildAiParseInputFromFile(file, 'Scanned Plan');
+    expect(input.text).toBeUndefined();
+    expect(input.fallbackName).toBe('Scanned Plan');
+    expect(input.mimeType).toBe('application/pdf');
+    expect(typeof input.fileBase64).toBe('string');
+    expect(input.fileBase64!.length).toBeGreaterThan(0);
+  });
+
+  it('falls back to application/pdf when the file has no type', async () => {
+    const file = new File([new Uint8Array([1])], 'scanned.pdf');
+    const input = await buildAiParseInputFromFile(file, 'Plan');
+    expect(input.mimeType).toBe('application/pdf');
   });
 });
 

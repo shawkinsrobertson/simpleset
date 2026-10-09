@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { DocumentSection } from '../parser/sectionScanner';
 import { filterTextToSections } from '../parser/sectionScanner';
-import { parsePlanText } from '../parser/textParser';
+import { parsePdfText } from '../parser';
 import { parseCsvText } from '../parser/xlsx';
 import type { SourceType } from '../db/types';
 
@@ -26,6 +26,7 @@ export default function SectionPickerPage() {
   const [sections, setSections] = useState<DocumentSection[]>(
     state?.sections ?? [],
   );
+  const [busy, setBusy] = useState(false);
 
   if (!state) {
     return (
@@ -58,16 +59,24 @@ export default function SectionPickerPage() {
 
   const selectedCount = sections.filter((s) => s.selected).length;
 
-  const handleParse = (useAll = false) => {
+  const handleParse = async (useAll = false) => {
     const text = useAll
       ? extractedText
       : filterTextToSections(extractedText, sections);
-    const parsed = isCsv
-      ? parseCsvText(text, fallbackName)
-      : parsePlanText(text, fallbackName);
-    navigate('/confirm', {
-      state: { parsedPlan: parsed, sourceType, sourceFileName, sourceFileId, sourceMimeType, sourceModifiedTime },
-    });
+    setBusy(true);
+    try {
+      // isCsv is unused by any current caller (section-picking only ever
+      // happens for PDFs), kept for the sheet-text shape this page already
+      // supports in case that changes.
+      const parsed = isCsv
+        ? parseCsvText(text, fallbackName)
+        : await parsePdfText(text, fallbackName);
+      navigate('/confirm', {
+        state: { parsedPlan: parsed, sourceType, sourceFileName, sourceFileId, sourceMimeType, sourceModifiedTime },
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -77,7 +86,8 @@ export default function SectionPickerPage() {
         <h1 className="font-display text-2xl font-semibold text-text">Select sections</h1>
         <p className="mt-1 text-sm text-text-secondary">
           We found {sections.length} section{sections.length === 1 ? '' : 's'}.
-          Intro and nutrition pages are unchecked — tap to include anything you want.
+          Intro and nutrition pages are unchecked — trimming them out keeps this faster
+          and cheaper to parse. Tap to include anything you want.
         </p>
       </div>
 
@@ -159,17 +169,20 @@ export default function SectionPickerPage() {
       {/* Sticky bottom bar */}
       <div className="fixed bottom-14 left-0 right-0 border-t border-border bg-card/95 px-5 py-3 backdrop-blur">
         <button
-          disabled={selectedCount === 0}
-          onClick={() => handleParse(false)}
-          className="btn-primary w-full py-3.5"
+          disabled={selectedCount === 0 || busy}
+          onClick={() => void handleParse(false)}
+          className="btn-primary w-full py-3.5 disabled:opacity-50"
         >
-          {selectedCount === 0
-            ? 'Select at least one section'
-            : `Parse ${selectedCount} section${selectedCount === 1 ? '' : 's'} →`}
+          {busy
+            ? 'Parsing…'
+            : selectedCount === 0
+              ? 'Select at least one section'
+              : `Parse ${selectedCount} section${selectedCount === 1 ? '' : 's'} →`}
         </button>
         <button
-          onClick={() => handleParse(true)}
-          className="mt-2 w-full py-1.5 text-center text-xs text-text-secondary"
+          disabled={busy}
+          onClick={() => void handleParse(true)}
+          className="mt-2 w-full py-1.5 text-center text-xs text-text-secondary disabled:opacity-50"
         >
           Parse entire document instead
         </button>

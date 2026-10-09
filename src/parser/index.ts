@@ -4,7 +4,7 @@ import { parsePlanText } from './textParser';
 import { extractTextFromDocx } from './docx';
 import { extractTextFromPdf } from './pdf';
 import { parseCsvText, parseXlsxFile } from './xlsx';
-import { buildAiParseInput, isAiParseConfigured, parseWithAiBackend } from './aiParse';
+import { buildAiParseInputFromText, buildAiParseInputFromFile, isAiParseConfigured, parseWithAiBackend } from './aiParse';
 
 export type { ParsedPlan, ParsedDay, ParsedExercise } from './types';
 export { detectFileKind } from './types';
@@ -47,31 +47,52 @@ export async function parseFile(file: File): Promise<ParsedPlan> {
 }
 
 /**
- * PDF parsing is a paid, AI-assisted feature: embedded text (or raw bytes,
- * for scanned PDFs) is sent to the backend for OCR + structuring. If the
- * backend is unconfigured, rate-limited, or unreachable, falls back to the
- * local regex parser on whatever text could be extracted so import never
- * hard-fails.
+ * Sends already-extracted PDF text to the AI backend (optionally trimmed to
+ * just the sections the user picked — see SectionPickerPage). Falls back to
+ * the local regex parser on whatever text was given if the backend is
+ * unconfigured, rate-limited, or unreachable, so import never hard-fails.
  */
-export async function parsePdf(file: File, fallbackName: string): Promise<ParsedPlan> {
-  const text = await extractTextFromPdf(file);
-
+export async function parsePdfText(text: string, fallbackName: string): Promise<ParsedPlan> {
   try {
     if (!isAiParseConfigured()) {
       throw new Error('AI-assisted PDF import is not configured for this deployment.');
     }
-    const input = await buildAiParseInput(file, text, fallbackName);
-    return await parseWithAiBackend(input);
+    return await parseWithAiBackend(buildAiParseInputFromText(text, fallbackName));
   } catch (e) {
     const plan = parsePlanText(text, fallbackName);
     const reason = e instanceof Error ? e.message : 'AI-assisted PDF import failed.';
-    plan.warnings.unshift(
-      text.trim()
-        ? `${reason} Falling back to basic text parsing, which may be less accurate.`
-        : `${reason} No text could be extracted from this PDF either — try exporting as a Word doc or spreadsheet instead.`,
-    );
+    plan.warnings.unshift(`${reason} Falling back to basic text parsing, which may be less accurate.`);
     return plan;
   }
+}
+
+/**
+ * Sends a PDF's raw bytes to the AI backend — the path for scanned/
+ * image-only PDFs with no embedded text layer. Falls back to an empty plan
+ * with a warning if the backend is unconfigured, rate-limited, or
+ * unreachable.
+ */
+export async function parsePdfBytes(file: File, fallbackName: string): Promise<ParsedPlan> {
+  try {
+    if (!isAiParseConfigured()) {
+      throw new Error('AI-assisted PDF import is not configured for this deployment.');
+    }
+    return await parseWithAiBackend(await buildAiParseInputFromFile(file, fallbackName));
+  } catch (e) {
+    const plan = parsePlanText('', fallbackName);
+    const reason = e instanceof Error ? e.message : 'AI-assisted PDF import failed.';
+    plan.warnings.unshift(`${reason} No text could be extracted from this PDF either — try exporting as a Word doc or spreadsheet instead.`);
+    return plan;
+  }
+}
+
+/**
+ * PDF parsing is a paid, AI-assisted feature: embedded text (or raw bytes,
+ * for scanned PDFs) is sent to the backend for OCR + structuring.
+ */
+export async function parsePdf(file: File, fallbackName: string): Promise<ParsedPlan> {
+  const text = await extractTextFromPdf(file);
+  return text.trim() ? parsePdfText(text, fallbackName) : parsePdfBytes(file, fallbackName);
 }
 
 /** Parses plain text already extracted elsewhere (e.g. a Google Doc export). */

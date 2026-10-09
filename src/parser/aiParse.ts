@@ -28,12 +28,19 @@ async function fileToBase64(file: File): Promise<string> {
   return btoa(binary);
 }
 
+export function buildAiParseInputFromText(text: string, fallbackName: string): AiParseInput {
+  return { text, fallbackName };
+}
+
+export async function buildAiParseInputFromFile(file: File, fallbackName: string): Promise<AiParseInput> {
+  return { fileBase64: await fileToBase64(file), mimeType: file.type || 'application/pdf', fallbackName };
+}
+
 /** Builds the AI parse request body for a PDF, preferring embedded text over raw bytes to keep requests small and cheap. */
 export async function buildAiParseInput(file: File, extractedText: string, fallbackName: string): Promise<AiParseInput> {
-  if (extractedText.trim()) {
-    return { text: extractedText, fallbackName };
-  }
-  return { fileBase64: await fileToBase64(file), mimeType: file.type || 'application/pdf', fallbackName };
+  return extractedText.trim()
+    ? buildAiParseInputFromText(extractedText, fallbackName)
+    : buildAiParseInputFromFile(file, fallbackName);
 }
 
 /** Sends a PDF (as text or raw bytes) to the AI-assisted parsing backend. Throws if unconfigured, rate-limited, or the backend fails — callers should fall back to local parsing. */

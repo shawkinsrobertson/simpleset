@@ -1,6 +1,15 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { parseFile, detectFileKind, isAiParseConfigured } from '../parser';
+import {
+  parseFile,
+  detectFileKind,
+  isAiParseConfigured,
+  extractTextFromPdf,
+  scanSections,
+  needsSectionPicker,
+  parsePdfText,
+  parsePdfBytes,
+} from '../parser';
 import type { ParsedPlan } from '../parser';
 
 function emptyManualPlan(): ParsedPlan {
@@ -31,9 +40,30 @@ export default function ImportPage() {
         sourceModifiedTime: String(file.lastModified),
       };
 
-      // PDF (AI-assisted, with a local fallback), xlsx, and text are all
-      // parsed entirely inside parseFile() — no section picker needed, the
-      // AI backend handles filtering non-workout content for PDFs itself.
+      if (kind === 'pdf') {
+        const text = await extractTextFromPdf(file);
+        const fallbackName = file.name.replace(/\.[^.]+$/, '');
+
+        // Documents with substantial non-workout content (intro/nutrition
+        // chapters, TOC pages) get a trim step before the paid AI call —
+        // fewer tokens sent, lower cost. Clean/dense PDFs skip straight
+        // through, same as scanned PDFs with no extractable text.
+        if (text.trim()) {
+          const sections = scanSections(text);
+          if (needsSectionPicker(sections)) {
+            navigate('/import/sections', {
+              state: { sections, extractedText: text, fallbackName, ...sourceState },
+            });
+            return;
+          }
+        }
+
+        const parsed = text.trim() ? await parsePdfText(text, fallbackName) : await parsePdfBytes(file, fallbackName);
+        navigate('/confirm', { state: { parsedPlan: parsed, ...sourceState } });
+        return;
+      }
+
+      // xlsx, docx, and text are parsed entirely inside parseFile() — no AI call, no picker.
       const parsed = await parseFile(file);
       navigate('/confirm', { state: { parsedPlan: parsed, ...sourceState } });
     } catch (e) {

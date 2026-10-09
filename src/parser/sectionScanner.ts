@@ -176,6 +176,12 @@ export function scanSections(text: string): DocumentSection[] {
  * more than 10 % of all sections. A 10 % bar catches eBook-style PDFs
  * (e.g. 19/121 = 16 %) while still passing through short/clean plans.
  *
+ * This doubles as a cost control: PDF import now sends extracted text to a
+ * paid AI backend, so detecting substantial non-workout content (intro/
+ * nutrition chapters, TOC pages) lets the user trim it before that call —
+ * fewer tokens sent, lower cost. A dense, uniformly-workout PDF with
+ * nothing worth trimming correctly skips the picker either way.
+ *
  * NOTE: callers should only invoke this for PDFs. DOCX/text formats use
  * circuit/tri-set structures where targets appear on shared lines and the
  * per-section exercise count is unreliable — showing the picker there
