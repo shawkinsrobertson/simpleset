@@ -18,6 +18,7 @@ import CircuitLoggingPage from './pages/CircuitLoggingPage';
 import DetailedStatsPage from './pages/DetailedStatsPage';
 import SummaryPage from './pages/SummaryPage';
 import EditDayPage from './pages/EditDayPage';
+import AuthPage from './pages/AuthPage';
 
 const WIDE_ROUTES = ['/confirm', '/sync-review'];
 
@@ -44,6 +45,7 @@ function App() {
         <Route path="/log-superset/:groupId" element={<SupersetLoggingPage />} />
         <Route path="/log-circuit/:groupId" element={<CircuitLoggingPage />} />
         <Route path="/summary/:sessionId" element={<SummaryPage />} />
+        <Route path="/auth" element={<AuthPage />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="/import/drive" element={<DriveImportPage />} />
         <Route path="/import/sections" element={<SectionPickerPage />} />

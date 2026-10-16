@@ -1,6 +1,9 @@
+import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { useTheme } from '../hooks/useTheme';
 import type { ColorMode } from '../lib/theme';
+import { useAuth } from '../hooks/useAuth';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const MODES: { value: ColorMode; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -10,10 +13,38 @@ const MODES: { value: ColorMode; label: string }[] = [
 
 export default function SettingsPage() {
   const { mode, contrast, setMode, setContrast } = useTheme();
+  const { loading: authLoading, user } = useAuth();
 
   return (
     <div className="flex flex-col gap-6 px-5 pt-8">
       <h1 className="font-display text-2xl font-semibold text-text">Settings</h1>
+
+      {isSupabaseConfigured() && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Account</h2>
+          <div className="border border-border bg-card p-4">
+            {authLoading ? null : user ? (
+              <>
+                <p className="text-sm font-medium text-text">{user.email}</p>
+                <p className="mt-0.5 text-xs text-text-secondary">Used for AI-assisted PDF import.</p>
+                <button onClick={() => supabase?.auth.signOut()} className="btn-secondary mt-3 w-full py-2 text-sm">
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-text">Not signed in</p>
+                <p className="mt-0.5 text-xs text-text-secondary">
+                  An account is only needed for AI-assisted PDF import — everything else works without one.
+                </p>
+                <Link to="/auth" className="btn-primary mt-3 block w-full py-2 text-center text-sm">
+                  Sign in
+                </Link>
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Display</h2>

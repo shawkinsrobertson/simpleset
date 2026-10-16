@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { deletePlan, getAllPlans, getPlanVersions, setActivePlan } from '../db/repo';
 import type { Plan } from '../db/types';
-import { parseCsv, parseFile, parseText } from '../parser';
+import { detectFileKind, parseCsv, parseFile, parseText } from '../parser';
 import { getAccessToken, isDriveConfigured } from '../drive/googleAuth';
 import { exportDriveFile, getFileModifiedTime } from '../drive/driveApi';
+import { requireSession } from '../lib/supabase';
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 const dateTimeFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -44,6 +45,8 @@ function PlanCard({ plan }: { plan: Plan }) {
   const [showHistory, setShowHistory] = useState(false);
 
   const handleFileResync = async (file: File) => {
+    if (detectFileKind(file) === 'pdf' && !(await requireSession(navigate, '/plans'))) return;
+
     setBusy(true);
     setMessage(null);
     try {

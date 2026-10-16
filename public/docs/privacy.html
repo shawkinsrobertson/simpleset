@@ -19,21 +19,22 @@
       </header>
 
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated: October 9, 2026</p>
+      <p class="updated">Last updated: October 16, 2026</p>
 
       <p>
         simpleSet is designed so your workout data stays on your device for everything you do in the app —
         tracking workouts, logging sets, viewing stats — with one optional exception: AI-assisted PDF
-        import, a paid feature described below. This page explains exactly what that means in practice.
+        import, a paid feature described below that requires creating an account. This page explains exactly
+        what that means in practice.
       </p>
 
       <h2>What simpleSet stores, and where</h2>
       <p>
         Everything you enter into simpleSet — imported plans, workout sessions, logged sets, personal
         records, and app preferences like light/dark mode — is stored in your browser's local database
-        (IndexedDB) on your own device. There is no account system, no sign-in, and no server operated by
-        simpleSet that this data is ever sent to. If you clear your browser's site data, uninstall the app,
-        or switch devices, that data does not carry over — simpleSet does not keep a backup copy anywhere.
+        (IndexedDB) on your own device, regardless of whether you have an account. If you clear your
+        browser's site data, uninstall the app, or switch devices, that data does not carry over — simpleSet
+        does not keep a backup copy anywhere.
       </p>
 
       <h2>Importing a plan from a file</h2>
@@ -42,21 +43,25 @@
         read and parsed entirely in your browser. It is never uploaded to a server.
       </p>
 
-      <h2>Importing a plan from a PDF (AI-assisted, paid feature)</h2>
+      <h2>Importing a plan from a PDF (AI-assisted, paid feature, requires an account)</h2>
       <p>
         PDF import works differently, because many PDF workout plans (especially scanned or photographed
-        ones) can't be read reliably by an offline parser. When you import a PDF:
+        ones) can't be read reliably by an offline parser. Using it requires creating an account (email and
+        password), used only to apply a fair daily usage limit — no other part of simpleSet needs an
+        account. Account creation and sign-in are handled entirely by Supabase, our backend provider; your
+        password is never seen by simpleSet's own code. When you import a PDF:
       </p>
       <ul>
-        <li>The text or file contents of that PDF are sent to simpleSet's own backend server, which forwards them to Anthropic's Claude API to extract a structured workout plan.</li>
-        <li>The PDF's contents are not stored by simpleSet's backend beyond what's needed to complete that one request, and are not used to train any model.</li>
-        <li>An anonymous, randomly generated device ID (not tied to your name, email, or any account — simpleSet has no accounts) is sent along with the request, used only to apply a daily usage limit.</li>
+        <li>The text or file contents of that PDF are sent to a Supabase Edge Function, which forwards them to Anthropic's Claude API to extract a structured workout plan.</li>
+        <li>The PDF's contents are not stored beyond what's needed to complete that one request, and are not used to train any model.</li>
+        <li>Your account (email address, and an internal account ID) is used only to apply the daily usage limit — a count of how many PDFs you've imported today, stored in Supabase's database.</li>
         <li>The resulting plan is returned to your browser and stored locally like any other import — it is not kept on simpleSet's server afterward.</li>
         <li>If this AI-assisted import is unavailable or fails, simpleSet falls back to basic local text parsing of the PDF, entirely on your device, same as other file types.</li>
       </ul>
       <p>
-        Anthropic's handling of data sent to its API is governed by its own
-        <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">privacy policy</a>.
+        Anthropic's and Supabase's handling of data sent to them is governed by their own privacy policies:
+        <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic</a> ·
+        <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase</a>.
       </p>
 
       <h2>Importing a plan from Google Drive (optional)</h2>
@@ -80,8 +85,9 @@
 
       <h2>Cookies</h2>
       <p>
-        simpleSet does not use cookies. It uses your browser's local storage only to remember your display
-        preferences (like theme) and the anonymous device ID described above, on your own device.
+        simpleSet does not use cookies. It uses your browser's local storage to remember your display
+        preferences (like theme), and — only if you've created an account for AI-assisted PDF import — your
+        signed-in session, so you don't have to sign in again on every visit.
       </p>
 
       <h2>Your control over your data</h2>

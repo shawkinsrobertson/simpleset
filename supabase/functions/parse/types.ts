@@ -1,9 +1,6 @@
-/**
- * Mirrors src/parser/types.ts on the frontend — kept in sync by hand. This
- * is the "standard format" the AI parsing call must produce; everything
- * downstream of parsing (the Confirm/edit grid, the diff/sync engine) only
- * ever consumes this shape, regardless of which path produced it.
- */
+// Mirrors src/parser/types.ts — kept manually in sync, same as the old
+// server/src/types.ts did. Deno Edge Functions deploy as a self-contained
+// directory, so this can't just import the frontend's copy directly.
 
 export type ExerciseGroupType = 'circuit' | 'superset';
 

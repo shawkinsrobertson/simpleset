@@ -1,13 +1,7 @@
 import type { ParsedPlan } from './types';
-import { getDeviceId } from '../lib/deviceId';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
-export function getParseApiUrl(): string | undefined {
-  return import.meta.env.VITE_PARSE_API_URL as string | undefined;
-}
-
-export function isAiParseConfigured(): boolean {
-  return Boolean(getParseApiUrl());
-}
+export { isSupabaseConfigured as isAiParseConfigured };
 
 export interface AiParseInput {
   /** Embedded text extracted locally, when the PDF has one — cheaper and more accurate than sending raw bytes. */
@@ -43,28 +37,35 @@ export async function buildAiParseInput(file: File, extractedText: string, fallb
     : buildAiParseInputFromFile(file, fallbackName);
 }
 
-/** Sends a PDF (as text or raw bytes) to the AI-assisted parsing backend. Throws if unconfigured, rate-limited, or the backend fails — callers should fall back to local parsing. */
+/**
+ * Sends a PDF (as text or raw bytes) to the AI-assisted parsing Supabase
+ * Edge Function. The caller's session JWT is attached automatically by the
+ * Supabase client — callers must gate on `requireSession` first (see
+ * `src/lib/supabase.ts`), since an unauthenticated invoke fails with a 401
+ * rather than something this function should silently fall back on. Throws
+ * if unconfigured, rate-limited, or the function fails — callers should
+ * fall back to local parsing.
+ */
 export async function parseWithAiBackend(input: AiParseInput): Promise<ParsedPlan> {
-  const baseUrl = getParseApiUrl();
-  if (!baseUrl) {
+  if (!supabase) {
     throw new Error('AI-assisted PDF import is not configured for this deployment.');
   }
 
-  const res = await fetch(`${baseUrl.replace(/\/$/, '')}/parse`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-device-id': getDeviceId(),
-    },
-    body: JSON.stringify(input),
-  });
+  const { data, error, response } = await supabase.functions.invoke<ParsedPlan>('parse', { body: input });
 
-  if (!res.ok) {
-    if (res.status === 429) {
+  if (error) {
+    if (response?.status === 429) {
       throw new Error("You've hit today's AI import limit — try again tomorrow, or export this plan as a Word doc or spreadsheet instead.");
     }
-    throw new Error(`AI-assisted PDF import failed (status ${res.status}).`);
+    if (response?.status === 401) {
+      throw new Error('You need to sign in to use AI-assisted PDF import.');
+    }
+    throw new Error(`AI-assisted PDF import failed: ${error.message}`);
   }
 
-  return (await res.json()) as ParsedPlan;
+  if (!data) {
+    throw new Error('AI-assisted PDF import returned no data.');
+  }
+
+  return data;
 }

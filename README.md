@@ -7,8 +7,9 @@ locally — V1 is single-device and local-first after import.
 ## Stack
 
 - React + TypeScript + Vite, Tailwind CSS
-- IndexedDB via [Dexie](https://dexie.org/) — the source of truth after import, nothing is synced to a server
-- Parsing runs entirely in the browser: `mammoth` (.docx), `xlsx`/SheetJS (.xlsx, and Sheet CSV exports), `pdfjs-dist` (.pdf)
+- IndexedDB via [Dexie](https://dexie.org/) — the source of truth for tracking data, nothing synced to a server
+- Parsing runs entirely in the browser for docx/xlsx/text: `mammoth` (.docx), `xlsx`/SheetJS (.xlsx, and Sheet CSV exports)
+- PDF import is AI-assisted (Claude, via a Supabase Edge Function) — the one feature that touches a server and requires an account; see "AI-assisted PDF import" below
 - Optional Google Drive import via Google Identity Services' client-side OAuth token flow (no backend — see "Google Drive" below)
 
 ## Getting started
@@ -30,8 +31,9 @@ Other scripts: `npm run build`, `npm run test` (vitest), `npm run lint` (oxlint)
 
 ## Plan grid editor
 
-The confirm screen (and the same components, reused for direct post-save
-editing from the Plan tab's "Duplicate day"/"Repeat across weeks…") is a
+The confirm screen (and the same `DayBlock`/`ExerciseRow` components,
+reused on a dedicated per-day screen — `/plan/day/:dayId`, reached via
+"Edit exercises" on the Plan tab — for editing an already-saved plan) is a
 real editable grid, not a form:
 
 - **Every cell is always editable** — click and type, no separate edit mode.
@@ -150,11 +152,42 @@ your dev origin to "Authorized JavaScript origins", and set
 `VITE_GOOGLE_CLIENT_ID`. Without it, the Drive import screen shows a
 "not configured" state and file upload still works normally.
 
+## AI-assisted PDF import
+
+PDF workout plans (especially scanned/photographed ones) can't be parsed
+reliably offline, so PDF import is the one feature that calls a server: a
+Supabase Edge Function (`supabase/functions/parse/`) sends the PDF's text
+(or raw bytes, for scanned pages with no embedded text layer) to Anthropic's
+Claude for OCR + structured extraction in one call, returning the same
+`ParsedPlan` shape the local parser produces — everything downstream
+(confirm screen, diff/sync engine) is unaware of which path produced it.
+Documents with substantial non-workout content (intro/nutrition chapters)
+get a trim step (`src/parser/sectionScanner.ts`, surfaced via the section
+picker) before the call, to keep requests cheap.
+
+This is the one feature requiring an account (email + password, via
+Supabase Auth) — every other feature in simpleSet works without signing
+in. The account exists solely to apply a fair daily usage limit
+(`parse_usage` table + `increment_parse_usage` RPC, `supabase/migrations/`)
+and isn't needed for anything else; see `src/lib/supabase.ts`
+(`requireSession`, gating the three PDF-AI entry points) and
+`src/pages/AuthPage.tsx`.
+
+To enable it: create a Supabase project, apply the migration, deploy the
+`parse` function (`supabase functions deploy parse`, with
+`ANTHROPIC_API_KEY` set as a function secret), and set
+`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` in `.env`. Without these, PDF
+import falls back to basic local text parsing (same as before this
+feature existed) and `/auth` shows a "not configured" state — nothing
+else in the app is affected.
+
+**Roadmap**: Google OAuth sign-in, alongside email/password — not built
+yet.
+
 ## Non-goals (V1)
 
-- Multi-device sync or cloud data storage
-- Accounts/auth beyond what Drive OAuth requires
+- Multi-device sync or cloud data storage for tracking/logged data
+- Accounts/auth beyond what AI-assisted PDF import and Drive OAuth require
 - Social/sharing/coach-client features
-- In-app plan authoring — you bring an existing plan
+- In-app plan authoring — you bring an existing plan (or build one manually)
 - Continuous two-way Drive sync (re-import is fine; it's not automatic)
-- OCR for scanned/image-only PDFs
