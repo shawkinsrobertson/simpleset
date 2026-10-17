@@ -11,6 +11,7 @@ import {
   parsePdfBytes,
 } from '../parser';
 import type { ParsedPlan } from '../parser';
+import { requireSession } from '../lib/supabase';
 
 function emptyManualPlan(): ParsedPlan {
   return {
@@ -41,6 +42,8 @@ export default function ImportPage() {
       };
 
       if (kind === 'pdf') {
+        if (!(await requireSession(navigate, '/import'))) return;
+
         const text = await extractTextFromPdf(file);
         const fallbackName = file.name.replace(/\.[^.]+$/, '');
 

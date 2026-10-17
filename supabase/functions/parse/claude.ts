@@ -1,7 +1,10 @@
-import type { ParsedDay, ParsedExercise, ParsedGroup, ParsedPlan } from './types.js';
+// Ported from the old server/src/claudeClient.ts — the Claude-calling logic
+// itself is unchanged (plain fetch, no Node-specific APIs), only the module
+// extension/import style changed for Deno.
+import type { ParsedDay, ParsedExercise, ParsedGroup, ParsedPlan } from './types.ts';
 
 const ANTHROPIC_VERSION = '2023-06-01';
-const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+const DEFAULT_MODEL = 'claude-haiku-5-5';
 const MAX_TOKENS = 8000;
 
 export interface ParseInput {

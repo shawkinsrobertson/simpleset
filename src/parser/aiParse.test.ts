@@ -1,41 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  buildAiParseInput,
-  buildAiParseInputFromText,
-  buildAiParseInputFromFile,
-  isAiParseConfigured,
-  parseWithAiBackend,
-} from './aiParse';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-function fakeLocalStorage() {
-  const store = new Map<string, string>();
-  return {
-    getItem: (key: string) => store.get(key) ?? null,
-    setItem: (key: string, value: string) => store.set(key, value),
-    removeItem: (key: string) => store.delete(key),
-    clear: () => store.clear(),
-  };
-}
+const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 
-beforeEach(() => {
-  vi.stubGlobal('localStorage', fakeLocalStorage());
-});
+vi.mock('../lib/supabase', () => ({
+  supabase: { functions: { invoke } },
+}));
+
+import { buildAiParseInput, buildAiParseInputFromText, buildAiParseInputFromFile, parseWithAiBackend } from './aiParse';
 
 afterEach(() => {
-  vi.unstubAllGlobals();
-  vi.unstubAllEnvs();
-});
-
-describe('isAiParseConfigured', () => {
-  it('is false when VITE_PARSE_API_URL is unset', () => {
-    vi.stubEnv('VITE_PARSE_API_URL', '');
-    expect(isAiParseConfigured()).toBe(false);
-  });
-
-  it('is true when VITE_PARSE_API_URL is set', () => {
-    vi.stubEnv('VITE_PARSE_API_URL', 'https://api.example.com');
-    expect(isAiParseConfigured()).toBe(true);
-  });
+  vi.clearAllMocks();
 });
 
 describe('buildAiParseInputFromText', () => {
@@ -82,37 +56,44 @@ describe('buildAiParseInput', () => {
 });
 
 describe('parseWithAiBackend', () => {
-  it('throws when the backend url is not configured', async () => {
-    vi.stubEnv('VITE_PARSE_API_URL', '');
-    await expect(parseWithAiBackend({ text: 'x', fallbackName: 'Plan' })).rejects.toThrow(/not configured/);
-  });
-
-  it('posts to <baseUrl>/parse with a device id header and returns the parsed plan', async () => {
-    vi.stubEnv('VITE_PARSE_API_URL', 'https://api.example.com');
+  it('invokes the "parse" Edge Function and returns the parsed plan', async () => {
     const fakePlan = { name: 'Plan', days: [], warnings: [] };
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => fakePlan });
-    vi.stubGlobal('fetch', fetchMock);
+    invoke.mockResolvedValue({ data: fakePlan, error: null, response: undefined });
 
     const result = await parseWithAiBackend({ text: 'some text', fallbackName: 'Plan' });
 
     expect(result).toEqual(fakePlan);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, options] = fetchMock.mock.calls[0];
-    expect(url).toBe('https://api.example.com/parse');
-    expect(options.method).toBe('POST');
-    expect(options.headers['x-device-id']).toBeTruthy();
-    expect(JSON.parse(options.body)).toEqual({ text: 'some text', fallbackName: 'Plan' });
+    expect(invoke).toHaveBeenCalledWith('parse', { body: { text: 'some text', fallbackName: 'Plan' } });
   });
 
   it('throws a rate-limit-specific message on 429', async () => {
-    vi.stubEnv('VITE_PARSE_API_URL', 'https://api.example.com');
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 429 }));
+    invoke.mockResolvedValue({ data: null, error: new Error('fail'), response: { status: 429 } });
     await expect(parseWithAiBackend({ text: 'x', fallbackName: 'Plan' })).rejects.toThrow(/limit/i);
   });
 
-  it('throws a generic error on other failures', async () => {
-    vi.stubEnv('VITE_PARSE_API_URL', 'https://api.example.com');
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 502 }));
-    await expect(parseWithAiBackend({ text: 'x', fallbackName: 'Plan' })).rejects.toThrow(/502/);
+  it('throws a sign-in message on 401', async () => {
+    invoke.mockResolvedValue({ data: null, error: new Error('fail'), response: { status: 401 } });
+    await expect(parseWithAiBackend({ text: 'x', fallbackName: 'Plan' })).rejects.toThrow(/sign in/i);
+  });
+
+  it('throws an error naming the failure on other statuses', async () => {
+    invoke.mockResolvedValue({ data: null, error: new Error('boom'), response: { status: 502 } });
+    await expect(parseWithAiBackend({ text: 'x', fallbackName: 'Plan' })).rejects.toThrow(/boom/);
+  });
+
+  it('throws when the function returns no data and no error', async () => {
+    invoke.mockResolvedValue({ data: null, error: null, response: undefined });
+    await expect(parseWithAiBackend({ text: 'x', fallbackName: 'Plan' })).rejects.toThrow(/no data/i);
+  });
+});
+
+describe('parseWithAiBackend (Supabase not configured)', () => {
+  it('throws without attempting to invoke anything', async () => {
+    vi.resetModules();
+    vi.doMock('../lib/supabase', () => ({ supabase: undefined }));
+    const { parseWithAiBackend: parseUnconfigured } = await import('./aiParse');
+
+    await expect(parseUnconfigured({ text: 'x', fallbackName: 'Plan' })).rejects.toThrow(/not configured/);
+    expect(invoke).not.toHaveBeenCalled();
   });
 });

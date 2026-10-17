@@ -5,6 +5,7 @@ import { filterTextToSections } from '../parser/sectionScanner';
 import { parsePdfText } from '../parser';
 import { parseCsvText } from '../parser/xlsx';
 import type { SourceType } from '../db/types';
+import { requireSession } from '../lib/supabase';
 
 interface LocationState {
   sections: DocumentSection[];
@@ -60,14 +61,16 @@ export default function SectionPickerPage() {
   const selectedCount = sections.filter((s) => s.selected).length;
 
   const handleParse = async (useAll = false) => {
+    // isCsv is unused by any current caller (section-picking only ever
+    // happens for PDFs), kept for the sheet-text shape this page already
+    // supports in case that changes. Only the AI (PDF) path needs an account.
+    if (!isCsv && !(await requireSession(navigate, '/import'))) return;
+
     const text = useAll
       ? extractedText
       : filterTextToSections(extractedText, sections);
     setBusy(true);
     try {
-      // isCsv is unused by any current caller (section-picking only ever
-      // happens for PDFs), kept for the sheet-text shape this page already
-      // supports in case that changes.
       const parsed = isCsv
         ? parseCsvText(text, fallbackName)
         : await parsePdfText(text, fallbackName);
